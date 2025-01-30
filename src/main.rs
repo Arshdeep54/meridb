@@ -6,7 +6,7 @@ mod commands;
 mod database;
 mod parser;
 use database::session::DatabaseSession;
-use parser::sql_parser::parse_command;
+use parser::parse_command;
 #[derive(Parser)]
 struct Cli {
     pattern: Option<String>,

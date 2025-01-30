@@ -53,6 +53,7 @@ pub enum Helper {
 
 // Data type keywords
 #[derive(PartialEq, Debug)]
+#[derive(Clone)]
 pub enum DataType {
     INTEGER, VARCHAR, TEXT, BOOLEAN, DATE, TIME, TIMESTAMP, DATETIME, CHAR, BLOB, ENUM,
     JSON, DECIMAL, FLOAT, DOUBLE, REAL, NUMERIC, TINYINT, SMALLINT, MEDIUMINT, BIGINT,
@@ -158,5 +159,14 @@ fn match_data_type(keyword: &str) -> Result<DataType, String> {
         "mediumint" => Ok(DataType::MEDIUMINT),
         "bigint" => Ok(DataType::BIGINT),
         _ => Err(String::from("Not a data type")),
+    }
+}
+
+use std::fmt;
+
+impl fmt::Display for Helper {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Customize this based on how you want `Helper` to be converted to a string
+        write!(f, "{:?}", self) // Example: Uses Debug representation
     }
 }
