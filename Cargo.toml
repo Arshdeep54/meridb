@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
 anyhow = { version = "1.0", default-features = false }
-crossterm = "0.25"
-reedline = "0.10" 
+termios = "0.3"
+libc = "0.2"

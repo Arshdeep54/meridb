@@ -1,7 +1,8 @@
 use std::io::{self, Read, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use termios::{tcsetattr, Termios, ECHO, ICANON, STDIN_FILENO, TCSANOW};
+use termios::{tcsetattr, Termios, ECHO, ICANON, TCSANOW};
+use libc::STDIN_FILENO;
 
 pub struct RawTerminal {
     original_termios: Termios,
@@ -54,7 +55,7 @@ impl TerminalReader {
         }
     }
 
-    pub fn read_key(&self) -> io::Result<KeyEvent> {
+    pub fn read_key(&mut self) -> io::Result<KeyEvent> {
         let mut buffer = [0; 4];
         match self.stdin.read(&mut buffer[..1])? {
             0 => Ok(KeyEvent::CtrlD),
@@ -63,7 +64,6 @@ impl TerminalReader {
                 13 | 10 => Ok(KeyEvent::Enter),
                 127 => Ok(KeyEvent::Backspace),
                 27 => {
-                    // Read potential escape sequence
                     if self.stdin.read(&mut buffer[1..3])? == 2 && buffer[1] == b'[' {
                         match buffer[2] {
                             b'A' => Ok(KeyEvent::ArrowUp),
