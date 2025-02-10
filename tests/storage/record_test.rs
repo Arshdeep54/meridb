@@ -1,6 +1,7 @@
-use crate::storage::record::{Record, Value};
-use crate::storage::types::{Column, DataType};
+
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use meridb::{ storage::{record::Value, types::Column}, DataType, Record};
 
 fn create_test_record() -> Record {
     let mut record = Record::new(1);
@@ -44,7 +45,7 @@ fn test_record_validation() {
     let mut record = create_test_record();
     
     let columns = vec![
-        Column::new("name".to_string(), DataType::Text, false),
+        Column::new("name".to_string(),DataType::Text, false),
         Column::new("age".to_string(), DataType::Integer, false),
         Column::new("email".to_string(), DataType::Text, true),
     ];

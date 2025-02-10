@@ -1,4 +1,5 @@
-use crate::storage::types::{Column, DataType};
+use meridb::{storage::types::Column, DataType};
+
 
 #[test]
 fn test_column_creation() {

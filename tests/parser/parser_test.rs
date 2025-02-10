@@ -1,17 +1,17 @@
 use meridb::parser::ast::{ASTNode, ASTValue, Condition, Assignment};
-use meridb::parser::token::Token;
-use meridb::parser::Parser;
+use meridb::parser::token::{Token, Command};
+use meridb::parser::parser::Parser;
 
 #[test]
 fn test_select_statement() {
     let tokens = vec![
-        Token::IDENT("SELECT".chars().collect()),
+        Token::Command(Command::SELECT),
         Token::IDENT("id".chars().collect()),
         Token::COMMA(','),
         Token::IDENT("name".chars().collect()),
-        Token::IDENT("FROM".chars().collect()),
+        Token::Command(Command::FROM),
         Token::IDENT("users".chars().collect()),
-        Token::IDENT("WHERE".chars().collect()),
+        Token::Command(Command::WHERE),
         Token::IDENT("age".chars().collect()),
         Token::GT('>'),
         Token::ASSIGN('='),
@@ -22,10 +22,10 @@ fn test_select_statement() {
     let mut parser = Parser::new(tokens);
     
     match parser.parse_select() {
-        Ok(ASTNode::Select { columns, table, condition }) => {
+        Ok(ASTNode::Select { columns, table_name, where_clause }) => {
             assert_eq!(columns, vec!["id", "name"]);
-            assert_eq!(table, "users");
-            match condition {
+            assert_eq!(table_name, "users");
+            match where_clause {
                 Some(Condition {
                     column,
                     operator,
@@ -45,10 +45,10 @@ fn test_select_statement() {
 #[test]
 fn test_insert_statement() {
     let tokens = vec![
-        Token::IDENT("INSERT".chars().collect()),
-        Token::IDENT("INTO".chars().collect()),
+        Token::Command(Command::INSERT),
+        Token::Command(Command::INTO),
         Token::IDENT("users".chars().collect()),
-        Token::IDENT("VALUES".chars().collect()),
+        Token::Command(Command::VALUES),
         Token::LPAREN('('),
         Token::SINGLEQUOTE('\''),
         Token::IDENT("John".chars().collect()),
@@ -62,8 +62,8 @@ fn test_insert_statement() {
     let mut parser = Parser::new(tokens);
     
     match parser.parse_insert() {
-        Ok(ASTNode::Insert { table, values }) => {
-            assert_eq!(table, "users");
+        Ok(ASTNode::Insert { table_name, values }) => {
+            assert_eq!(table_name, "users");
             assert_eq!(values.len(), 2);
             assert_eq!(values[0], ASTValue::String("John".to_string()));
             assert_eq!(values[1], ASTValue::Int(25));
@@ -75,15 +75,15 @@ fn test_insert_statement() {
 #[test]
 fn test_update_statement() {
     let tokens = vec![
-        Token::IDENT("UPDATE".chars().collect()),
+        Token::Command(Command::UPDATE),
         Token::IDENT("users".chars().collect()),
-        Token::IDENT("SET".chars().collect()),
+        Token::Command(Command::SET),
         Token::IDENT("name".chars().collect()),
         Token::ASSIGN('='),
         Token::SINGLEQUOTE('\''),
         Token::IDENT("Jane".chars().collect()),
         Token::SINGLEQUOTE('\''),
-        Token::IDENT("WHERE".chars().collect()),
+        Token::Command(Command::WHERE),
         Token::IDENT("id".chars().collect()),
         Token::ASSIGN('='),
         Token::INT("1".chars().collect()),

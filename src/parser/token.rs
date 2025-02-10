@@ -40,7 +40,7 @@ pub enum Token {
 #[derive(PartialEq, Debug)]
 pub enum Command {
     CREATE, UPDATE,INSERT, DELETE, SELECT, FROM, WHERE, ORDER, ASC, DESC, BY, LIMIT, OFFSET, INTO, VALUES,
-    TABLE, DATABASE, USE, SHOW,
+    TABLE, DATABASE, USE, SHOW, SET,
 }
 
 // Helper keywords
@@ -61,18 +61,19 @@ pub enum DataType {
 
 pub fn get_keyword_token(ident: &Vec<char>) -> Result<Token, String> {
     let identifier: String = ident.iter().collect();
+    let lowercase_identifier = identifier.to_lowercase();
 
-    if let Ok(command) = match_command(&identifier) {
+    if let Ok(command) = match_command(&lowercase_identifier) {
         return Ok(Token::Command(command));
     }
-    if let Ok(helper) = match_helper(&identifier) {
+    if let Ok(helper) = match_helper(&lowercase_identifier) {
         return Ok(Token::Helper(helper));
     }
-    if let Ok(data_type) = match_data_type(&identifier) {
+    if let Ok(data_type) = match_data_type(&lowercase_identifier) {
         return Ok(Token::DataType(data_type));
     }
 
-    match identifier.as_str() {
+    match lowercase_identifier.as_str() {
         "true" => Ok(Token::TRUE),
         "false" => Ok(Token::FALSE),
         _ => Err(String::from("Not a keyword")),
@@ -100,6 +101,7 @@ fn match_command(keyword: &str) -> Result<Command, String> {
         "database" => Ok(Command::DATABASE),
         "use" => Ok(Command::USE),
         "show" => Ok(Command::SHOW),
+        "set" => Ok(Command::SET),
         _ => Err(String::from("Not a command")),
     }
 }
@@ -136,7 +138,7 @@ fn match_helper(keyword: &str) -> Result<Helper, String> {
 }
 
 fn match_data_type(keyword: &str) -> Result<DataType, String> {
-    match keyword {
+    match keyword.to_lowercase().as_str() {
         "integer" => Ok(DataType::INTEGER),
         "varchar" => Ok(DataType::VARCHAR),
         "text" => Ok(DataType::TEXT),

@@ -1,6 +1,5 @@
-use crate::storage::table::Table;
-use crate::storage::types::{Column, DataType};
-use crate::storage::record::{Record, Value};
+use meridb::{storage::{record::Value, types::Column}, DataType, Record, Table};
+
 
 fn create_test_table() -> Table {
     let columns = vec![
