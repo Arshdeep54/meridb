@@ -18,27 +18,28 @@ fn is_digit(ch: char) -> bool {
 
 impl Lexer {
     pub fn new(input: Vec<char>) -> Self {
-        Self {
-            input: input,
+        let mut lexer = Self {
+            input,
             position: 0,
             read_position: 0,
-            ch: '0',
-        }
+            ch: '\0',
+        };
+        lexer.read_char();
+        lexer
     }
 
     pub fn read_char(&mut self) {
         if self.read_position >= self.input.len() {
-            self.ch = '0';
+            self.ch = '\0';
         } else {
             self.ch = self.input[self.read_position];
         }
         self.position = self.read_position;
-        self.read_position = self.read_position + 1;
+        self.read_position += 1;
     }
 
     pub fn skip_whitespace(&mut self) {
-        let ch = self.ch;
-        if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
+        while self.ch == ' ' || self.ch == '\t' || self.ch == '\n' || self.ch == '\r' {
             self.read_char();
         }
     }
@@ -111,7 +112,7 @@ impl Lexer {
             '\'' => {
                 tok = token::Token::SINGLEQUOTE(self.ch);
             }
-            '0' => {
+            '\0' => {
                 tok = token::Token::EOF;
             }
             _ => {
@@ -140,7 +141,6 @@ impl Lexer {
 
 pub fn get_tokens(input: &str) -> Vec<token::Token> {
     let mut l = Lexer::new(input.chars().collect());
-    l.read_char();
     let mut tokens: Vec<token::Token> = Vec::new();
     loop {
         let token = l.next_token();

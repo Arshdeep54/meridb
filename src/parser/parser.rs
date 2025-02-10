@@ -4,7 +4,7 @@ use super::{
 };
 
 pub struct Parser {
-    tokens: Vec<Token>,
+    pub tokens: Vec<Token>,
     position: usize,
 }
 
@@ -69,6 +69,7 @@ impl Parser {
                     let mut constraints = Vec::new();
                     while let Some(Token::Helper(constr)) = self.peek() {
                         constraints.push(constr.to_string().chars().collect());
+                        constraints.push(constr.to_string().chars().collect());
                         self.consume();
                     }
 
@@ -97,6 +98,19 @@ impl Parser {
             columns,
         })
     }
+    pub fn parse_create_database(&mut self) -> Result<ASTNode, String> {
+        self.expect(Token::Command(super::token::Command::CREATE))?;
+
+        self.expect(Token::Command(super::token::Command::DATABASE))?;
+
+        let database_name = if let Some(Token::IDENT(name)) = self.consume() {
+            name.iter().collect::<String>()
+        } else {
+            return Err("Expected database name".to_string());
+        };
+
+        Ok(ASTNode::CreateDatabase { database_name })
+    }
 }
 
 impl Parser {
@@ -110,7 +124,14 @@ impl Parser {
         let operator = match self.consume() {
             Some(Token::ASSIGN('=')) => "=".to_string(),
             Some(Token::LT('<')) => "<".to_string(),
-            Some(Token::GT('>')) => ">".to_string(),
+            Some(Token::GT('>')) => {
+                if let Some(Token::ASSIGN('=')) = self.peek() {
+                    self.consume();
+                    ">=".to_string()
+                } else {
+                    ">".to_string()
+                }
+            }
             Some(Token::BANG('!')) => {
                 if let Some(Token::ASSIGN('=')) = self.consume() {
                     "!=".to_string()
@@ -118,7 +139,7 @@ impl Parser {
                     return Err("Expected '=' after '!'".to_string());
                 }
             }
-            _ => return Err("Expected valid operator in condition".to_string()),
+            _ => return Err("Expected operator".to_string()),
         };
 
         let value = self.parse_value()?;
@@ -131,20 +152,27 @@ impl Parser {
     }
 
     fn parse_value(&mut self) -> Result<ASTValue, String> {
-        match self.consume() {
+        match self.peek() {
             Some(Token::INT(val)) => {
                 let int_value = val
                     .iter()
                     .collect::<String>()
                     .parse::<i64>()
                     .map_err(|_| "Invalid integer value".to_string())?;
+                self.consume();
                 Ok(ASTValue::Int(int_value))
             }
-            Some(Token::IDENT(val)) => Ok(ASTValue::String(val.iter().collect())),
-            Some(Token::TRUE) => Ok(ASTValue::Boolean(true)),
-            Some(Token::FALSE) => Ok(ASTValue::Boolean(false)),
-            Some(Token::Helper(super::token::Helper::NULL)) => Ok(ASTValue::Null),
-            _ => Err("Expected a valid value in condition".to_string()),
+            Some(Token::SINGLEQUOTE(_)) => {
+                self.consume(); // Consume opening quote
+                if let Some(Token::IDENT(val)) = self.consume() {
+                    let str_value = val.iter().collect();
+                    self.expect(Token::SINGLEQUOTE('\''))?;
+                    Ok(ASTValue::String(str_value))
+                } else {
+                    Err("Expected string value".to_string())
+                }
+            }
+            _ => Err("Expected value".to_string()),
         }
     }
 }
@@ -178,6 +206,7 @@ impl Parser {
             None
         };
 
+        self.expect(Token::SEMICOLON(';'))?;
         Ok(ASTNode::Select {
             columns,
             table_name,
@@ -209,12 +238,22 @@ impl Parser {
                         .collect::<String>()
                         .parse::<i64>()
                         .map_err(|_| "Invalid integer value".to_string())?;
+                    let int_value = val
+                        .iter()
+                        .collect::<String>()
+                        .parse::<i64>()
+                        .map_err(|_| "Invalid integer value".to_string())?;
                     values.push(ASTValue::Int(int_value));
                     self.consume();
                 }
-                Token::IDENT(val) => {
-                    values.push(ASTValue::String(val.iter().collect()));
-                    self.consume();
+                Token::SINGLEQUOTE(_) => {
+                    self.consume(); // Consume opening quote
+                    if let Some(Token::IDENT(val)) = self.consume() {
+                        values.push(ASTValue::String(val.iter().collect()));
+                    } else {
+                        return Err("Expected string value".to_string());
+                    }
+                    self.expect(Token::SINGLEQUOTE('\'')); // Consume closing quote
                 }
                 Token::COMMA(',') => {
                     self.consume();
@@ -227,6 +266,7 @@ impl Parser {
             }
         }
 
+        self.expect(Token::SEMICOLON(';'))?;
         Ok(ASTNode::Insert { table_name, values })
     }
 }
@@ -241,14 +281,12 @@ impl Parser {
             return Err("Expected table name".to_string());
         };
 
-        self.expect(Token::Helper(super::token::Helper::SET))?;
+        self.expect(Token::Command(Command::SET))?;
 
         let mut assignments = Vec::new();
         while let Some(Token::IDENT(col)) = self.consume() {
             let column_name = col.iter().collect::<String>();
-            {
-                self.expect(Token::ASSIGN('='))?;
-            }
+            self.expect(Token::ASSIGN('='))?;
             let value = self.parse_value()?;
             assignments.push(Assignment {
                 column: column_name,
@@ -267,6 +305,7 @@ impl Parser {
         } else {
             None
         };
+        self.expect(Token::SEMICOLON(';'))?;
 
         Ok(ASTNode::Update {
             table_name,
