@@ -1,6 +1,7 @@
 use super::token::DataType;
 
-#[derive(Debug)]
+/// Abstract Syntax Tree Value
+#[derive(Debug, PartialEq)]
 pub enum ASTValue {
     Int(i64),
     String(String),
@@ -50,5 +51,8 @@ pub enum ASTNode {
     Delete {
         table_name: String,
         where_clause: Option<Condition>,
+    },
+    CreateDatabase {
+        database_name: String,
     },
 }

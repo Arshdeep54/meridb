@@ -2,13 +2,9 @@ use clap::Parser;
 use std::fs;
 use std::path::PathBuf;
 
-mod commands;
-mod database;
-mod input_handler;
-mod parser;
-
-use database::session::DatabaseSession;
-use parser::parse_command;
+use meridb::database::session::DatabaseSession;
+use meridb::input_handler::InputHandler;
+use meridb::parser::parse_command;
 
 #[derive(Parser)]
 struct Cli {
@@ -26,8 +22,8 @@ fn main() {
     }
 
     let history_file = data_dir.join("history.txt");
-    let mut input_handler = input_handler::InputHandler::with_history_file(history_file)
-        .expect("Failed to initialize input handler");
+    let mut input_handler =
+        InputHandler::with_history_file(history_file).expect("Failed to initialize input handler");
 
     loop {
         match input_handler.readline("meridb> ") {
