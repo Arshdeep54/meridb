@@ -1,27 +1,7 @@
-use std::fmt;
+use serde::{Serialize, Deserialize};
+use crate::types::DataType;
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum DataType {
-    Integer,
-    Float,
-    Text,
-    Boolean,
-    Null,
-}
-
-impl fmt::Display for DataType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            DataType::Integer => write!(f, "INTEGER"),
-            DataType::Float => write!(f, "FLOAT"),
-            DataType::Text => write!(f, "TEXT"),
-            DataType::Boolean => write!(f, "BOOLEAN"),
-            DataType::Null => write!(f, "NULL"),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Column {
     pub name: String,
     pub data_type: DataType,
@@ -48,12 +28,5 @@ mod tests {
         assert_eq!(column.name, "id");
         assert_eq!(column.data_type, DataType::Integer);
         assert_eq!(column.nullable, false);
-    }
-
-    #[test]
-    fn test_data_type_display() {
-        assert_eq!(DataType::Integer.to_string(), "INTEGER");
-        assert_eq!(DataType::Text.to_string(), "TEXT");
-        assert_eq!(DataType::Boolean.to_string(), "BOOLEAN");
     }
 }

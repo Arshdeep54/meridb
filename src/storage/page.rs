@@ -1,9 +1,11 @@
+use serde::{Deserialize, Serialize};
+
 use super::record::Record;
 use std::collections::HashMap;
 
 const PAGE_SIZE: usize = 4096; // 4KB page size
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Page {
     pub id: u32,
     pub records: HashMap<u64, Record>,
@@ -46,6 +48,10 @@ impl Page {
 
     pub fn get_record(&self, record_id: u64) -> Option<&Record> {
         self.records.get(&record_id)
+    }
+
+    pub fn get_record_mut(&mut self, record_id: u64) -> Option<&mut Record> {
+        self.records.get_mut(&record_id)
     }
 
     fn calculate_record_size(&self, record: &Record) -> usize {

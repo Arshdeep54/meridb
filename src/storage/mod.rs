@@ -6,4 +6,3 @@ pub mod types;
 pub use page::Page;
 pub use record::Record;
 pub use table::Table;
-pub use types::DataType;

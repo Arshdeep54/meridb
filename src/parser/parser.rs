@@ -4,7 +4,7 @@ use super::{
 };
 
 pub struct Parser {
-    tokens: Vec<Token>,
+    pub tokens: Vec<Token>,
     position: usize,
 }
 

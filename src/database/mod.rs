@@ -3,7 +3,8 @@ use std::io;
 use std::path::Path;
 
 pub mod session;
-pub mod table;
+
+pub use self::session::DatabaseSession;
 
 fn create_database_file(db_name: &str) -> io::Result<()> {
     let file_path = format!("data/{}.db", db_name);

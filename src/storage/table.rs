@@ -2,8 +2,10 @@ use super::types::Column;
 use super::page::Page;
 use super::record::Record;
 use std::collections::HashMap;
+use serde::{Serialize, Deserialize};
+use crate::types::DataType;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Table {
     pub name: String,
     pub columns: Vec<Column>,
@@ -77,13 +79,33 @@ impl Table {
         self.next_page_id += 1;
         page_id
     }
+
+    pub fn update_record(&mut self, record: Record) -> Result<(), String> {
+        record.validate(&self.columns)?;
+        
+        for page in self.pages.values_mut() {
+            if let Some(existing_record) = page.get_record_mut(record.id) {
+                *existing_record = record;
+                return Ok(());
+            }
+        }
+        Err("Record not found".to_string())
+    }
+
+    pub fn scan(&self) -> impl Iterator<Item = &Record> {
+        self.pages.values().flat_map(|page| page.records.values())
+    }
+
+    pub fn scan_mut(&mut self) -> impl Iterator<Item = &mut Record> {
+        self.pages.values_mut().flat_map(|page| page.records.values_mut())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::DataType;
     use super::super::record::Value;
-    use super::super::types::DataType;
 
     fn create_test_table() -> Table {
         let columns = vec![
