@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(PartialEq, Debug)]
 pub enum Token {
     // Special types
@@ -39,40 +41,95 @@ pub enum Token {
 // Command keywords
 #[derive(PartialEq, Debug)]
 pub enum Command {
-    CREATE, UPDATE,INSERT, DELETE, SELECT, FROM, WHERE, ORDER, ASC, DESC, BY, LIMIT, OFFSET, INTO, VALUES,
-    TABLE, DATABASE, USE, SHOW,
+    CREATE,
+    UPDATE,
+    INSERT,
+    DELETE,
+    SELECT,
+    FROM,
+    WHERE,
+    ORDER,
+    ASC,
+    DESC,
+    BY,
+    LIMIT,
+    OFFSET,
+    INTO,
+    VALUES,
+    TABLE,
+    DATABASE,
+    USE,
+    SHOW,
+    SET,
 }
 
 // Helper keywords
 #[derive(PartialEq, Debug)]
 pub enum Helper {
-    ON, PRIMARY, KEY, UNIQUE, NOT, NULL, CONSTRAINT, FOREIGN, REFERENCES, ADD, COLUMN,
-    ALTER, DROP, INDEXES, CONSTRAINTS, FOREIGNKEYS, COLUMNS, PRIMARYKEYS, UNIQUEKEYS,
-    NOTNULLS, REFERENCESKEYS, ADDS, SET, DEFAULT, AUTOINCREMENT,
+    ON,
+    PRIMARY,
+    KEY,
+    UNIQUE,
+    NOT,
+    NULL,
+    CONSTRAINT,
+    FOREIGN,
+    REFERENCES,
+    ADD,
+    COLUMN,
+    ALTER,
+    DROP,
+    INDEXES,
+    CONSTRAINTS,
+    FOREIGNKEYS,
+    COLUMNS,
+    PRIMARYKEYS,
+    UNIQUEKEYS,
+    NOTNULLS,
+    REFERENCESKEYS,
+    ADDS,
+    DEFAULT,
+    AUTOINCREMENT,
 }
 
-// Data type keywords
-#[derive(PartialEq, Debug)]
-#[derive(Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum DataType {
-    INTEGER, VARCHAR, TEXT, BOOLEAN, DATE, TIME, TIMESTAMP, DATETIME, CHAR, BLOB, ENUM,
-    JSON, DECIMAL, FLOAT, DOUBLE, REAL, NUMERIC, TINYINT, SMALLINT, MEDIUMINT, BIGINT,
+    INTEGER,
+    FLOAT,
+    TEXT,
+    BOOLEAN,
+    DATE,
+    TIME,
+    TIMESTAMP,
+    DATETIME,
+    CHAR,
+    BLOB,
+    JSON,
+    DECIMAL,
+    DOUBLE,
+    REAL,
+    NUMERIC,
+    TINYINT,
+    SMALLINT,
+    MEDIUMINT,
+    BIGINT,
 }
 
 pub fn get_keyword_token(ident: &Vec<char>) -> Result<Token, String> {
     let identifier: String = ident.iter().collect();
+    let lowercase_identifier = identifier.to_lowercase();
 
-    if let Ok(command) = match_command(&identifier) {
+    if let Ok(command) = match_command(&lowercase_identifier) {
         return Ok(Token::Command(command));
     }
-    if let Ok(helper) = match_helper(&identifier) {
+    if let Ok(helper) = match_helper(&lowercase_identifier) {
         return Ok(Token::Helper(helper));
     }
-    if let Ok(data_type) = match_data_type(&identifier) {
+    if let Ok(data_type) = match_data_type(&lowercase_identifier) {
         return Ok(Token::DataType(data_type));
     }
 
-    match identifier.as_str() {
+    match lowercase_identifier.as_str() {
         "true" => Ok(Token::TRUE),
         "false" => Ok(Token::FALSE),
         _ => Err(String::from("Not a keyword")),
@@ -100,6 +157,7 @@ fn match_command(keyword: &str) -> Result<Command, String> {
         "database" => Ok(Command::DATABASE),
         "use" => Ok(Command::USE),
         "show" => Ok(Command::SHOW),
+        "set" => Ok(Command::SET),
         _ => Err(String::from("Not a command")),
     }
 }
@@ -128,17 +186,16 @@ fn match_helper(keyword: &str) -> Result<Helper, String> {
         "notnulls" => Ok(Helper::NOTNULLS),
         "referenceskeys" => Ok(Helper::REFERENCESKEYS),
         "adds" => Ok(Helper::ADDS),
-        "set" => Ok(Helper::SET),
         "default" => Ok(Helper::DEFAULT),
-        "auto_increment" => Ok(Helper::AUTOINCREMENT),
+        "autoincrement" => Ok(Helper::AUTOINCREMENT),
         _ => Err(String::from("Not a helper")),
     }
 }
 
 fn match_data_type(keyword: &str) -> Result<DataType, String> {
-    match keyword {
+    match keyword.to_lowercase().as_str() {
         "integer" => Ok(DataType::INTEGER),
-        "varchar" => Ok(DataType::VARCHAR),
+        "float" => Ok(DataType::FLOAT),
         "text" => Ok(DataType::TEXT),
         "boolean" => Ok(DataType::BOOLEAN),
         "date" => Ok(DataType::DATE),
@@ -147,10 +204,8 @@ fn match_data_type(keyword: &str) -> Result<DataType, String> {
         "datetime" => Ok(DataType::DATETIME),
         "char" => Ok(DataType::CHAR),
         "blob" => Ok(DataType::BLOB),
-        "enum" => Ok(DataType::ENUM),
         "json" => Ok(DataType::JSON),
         "decimal" => Ok(DataType::DECIMAL),
-        "float" => Ok(DataType::FLOAT),
         "double" => Ok(DataType::DOUBLE),
         "real" => Ok(DataType::REAL),
         "numeric" => Ok(DataType::NUMERIC),
@@ -162,11 +217,8 @@ fn match_data_type(keyword: &str) -> Result<DataType, String> {
     }
 }
 
-use std::fmt;
-
 impl fmt::Display for Helper {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Customize this based on how you want `Helper` to be converted to a string
-        write!(f, "{:?}", self) // Example: Uses Debug representation
+        write!(f, "{:?}", self)
     }
 }
