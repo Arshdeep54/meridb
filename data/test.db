@@ -1,0 +1,1 @@
+{"student":{"name":"student","columns":[{"name":"roll","data_type":"Integer","nullable":false}],"pages":{"0":{"id":0,"records":{},"next_page":null,"prev_page":null,"free_space":4096}},"next_page_id":1,"next_record_id":0}}

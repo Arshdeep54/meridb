@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["page","record","table","types"]};

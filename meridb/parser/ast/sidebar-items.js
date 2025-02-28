@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ASTNode","ASTValue"],"struct":["Assignment","ColumnDefinition","Condition"]};

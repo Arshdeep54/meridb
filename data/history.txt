@@ -1,0 +1,8 @@
+create table student(roll integer);
+create table bruh(roll integer);
+use database testl
+use database test;
+use test;
+create table student(roll integer);
+insert into student values(20);
+insert into bruh values(20);
