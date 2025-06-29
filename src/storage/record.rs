@@ -1,6 +1,7 @@
+use crate::parser::ast::{ASTValue, Condition};
+use crate::parser::token::Operator;
 use crate::DataType;
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use super::types::Column;
@@ -8,32 +9,8 @@ use super::types::Column;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Record {
     pub id: u64,
-    pub data: HashMap<String, Value>,
+    pub data: HashMap<String, ASTValue>,
     pub timestamp: u64,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum Value {
-    Integer(i64),
-    Float(f64),
-    Text(String),
-    Boolean(bool),
-    Null,
-}
-
-impl PartialOrd for Value {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match (self, other) {
-            (Value::Integer(a), Value::Integer(b)) => a.partial_cmp(b),
-            (Value::Float(a), Value::Float(b)) => a.partial_cmp(b),
-            (Value::Text(a), Value::Text(b)) => a.partial_cmp(b),
-            (Value::Boolean(a), Value::Boolean(b)) => a.partial_cmp(b),
-            (Value::Null, Value::Null) => Some(Ordering::Equal),
-            (Value::Null, _) => Some(Ordering::Less),
-            (_, Value::Null) => Some(Ordering::Greater),
-            _ => None,
-        }
-    }
 }
 
 impl Record {
@@ -48,11 +25,11 @@ impl Record {
         }
     }
 
-    pub fn set_value(&mut self, column: &str, value: Value) {
+    pub fn set_value(&mut self, column: &str, value: ASTValue) {
         self.data.insert(column.to_string(), value);
     }
 
-    pub fn get_value(&self, column: &str) -> Option<&Value> {
+    pub fn get_value(&self, column: &str) -> Option<&ASTValue> {
         self.data.get(column)
     }
 
@@ -76,13 +53,66 @@ impl Record {
         Ok(())
     }
 
-    fn is_valid_type(value: &Value, expected_type: &DataType) -> bool {
+    fn is_valid_type(value: &ASTValue, expected_type: &DataType) -> bool {
         match (value, expected_type) {
-            (Value::Integer(_), DataType::Integer) => true,
-            (Value::Float(_), DataType::Float) => true,
-            (Value::Text(_), DataType::Text) => true,
-            (Value::Boolean(_), DataType::Boolean) => true,
-            (Value::Null, _) => true,
+            (ASTValue::Int(_), DataType::Integer) => true,
+            (ASTValue::Float(_), DataType::Float) => true,
+            (ASTValue::String(_), DataType::Text) => true,
+            (ASTValue::Boolean(_), DataType::Boolean) => true,
+            (ASTValue::Null, _) => true,
+            _ => false,
+        }
+    }
+}
+
+impl Record {
+    pub fn evaluate_condition(&self, condition: &Condition) -> bool {
+        match condition {
+            Condition::Comparison {
+                operator,
+                left,
+                right,
+            } => match operator {
+                Operator::AND => self.evaluate_condition(&left) && self.evaluate_condition(&right),
+                Operator::OR => self.evaluate_condition(&left) || self.evaluate_condition(&right),
+                _ => {
+                    let left = self.extract_condition_value(left);
+                    let right = self.extract_condition_value(right);
+
+                    match (left, right) {
+                        (Some(lv), Some(rv)) => self.compare_values(&lv, &rv, operator),
+                        _ => false,
+                    }
+                }
+            },
+            _ => false,
+        }
+    }
+
+    fn extract_condition_value(&self, condition: &Condition) -> Option<ASTValue> {
+        match condition {
+            Condition::Column(column_name) => self.get_value(column_name).cloned(),
+            Condition::Value(value) => Some(value.clone()),
+            _ => None,
+        }
+    }
+
+    fn compare_values(&self, left: &ASTValue, right: &ASTValue, operator: &Operator) -> bool {
+        match (left, right) {
+            (ASTValue::Int(l), ASTValue::Int(r)) => match operator {
+                Operator::EQUALS => l == r,
+                Operator::NE => l != r,
+                Operator::LT => l < r,
+                Operator::GT => l > r,
+                Operator::LTorE => l <= r,
+                Operator::GTorE => l >= r,
+                _ => false,
+            },
+            (ASTValue::String(l), ASTValue::String(r)) => match operator {
+                Operator::EQUALS => l == r,
+                Operator::NE => l != r,
+                _ => false,
+            },
             _ => false,
         }
     }
@@ -102,22 +132,22 @@ mod tests {
     #[test]
     fn test_record_value_operations() {
         let mut record = Record::new(1);
-        record.set_value("name", Value::Text("John".to_string()));
-        record.set_value("age", Value::Integer(30));
+        record.set_value("name", ASTValue::String("John".to_string()));
+        record.set_value("age", ASTValue::Int(30));
 
         assert_eq!(
             record.get_value("name"),
-            Some(&Value::Text("John".to_string()))
+            Some(&ASTValue::String("John".to_string()))
         );
-        assert_eq!(record.get_value("age"), Some(&Value::Integer(30)));
+        assert_eq!(record.get_value("age"), Some(&ASTValue::Int(30)));
         assert_eq!(record.get_value("unknown"), None);
     }
 
     #[test]
     fn test_record_validation() {
         let mut record = Record::new(1);
-        record.set_value("id", Value::Integer(1));
-        record.set_value("name", Value::Text("John".to_string()));
+        record.set_value("id", ASTValue::Int(1));
+        record.set_value("name", ASTValue::String("John".to_string()));
 
         let columns = vec![
             Column::new("id".to_string(), DataType::Integer, false),
@@ -128,7 +158,7 @@ mod tests {
         assert!(record.validate(&columns).is_ok());
 
         // Test invalid type
-        record.set_value("id", Value::Text("invalid".to_string()));
+        record.set_value("id", ASTValue::String("invalid".to_string()));
         assert!(record.validate(&columns).is_err());
     }
 }

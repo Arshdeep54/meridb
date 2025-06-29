@@ -1,5 +1,3 @@
-use std::string;
-
 use crate::parser::token;
 pub struct Lexer {
     input: Vec<char>,
@@ -44,6 +42,14 @@ impl Lexer {
         }
     }
 
+    pub fn peek_char(&self) -> char {
+        if self.read_position >= self.input.len() {
+            '\0'
+        } else {
+            self.input[self.read_position]
+        }
+    }
+
     pub fn next_token(&mut self) -> token::Token {
         let read_identifier = |l: &mut Lexer| -> Vec<char> {
             let position = l.position;
@@ -61,32 +67,44 @@ impl Lexer {
             l.input[position..l.position].to_vec()
         };
 
-        let tok: token::Token;
+        let mut tok: token::Token;
         self.skip_whitespace();
         match self.ch {
             '=' => {
-                tok = token::Token::ASSIGN(self.ch);
+                tok = token::Token::Operator(token::Operator::EQUALS);
             }
             '+' => {
-                tok = token::Token::PLUS(self.ch);
+                tok = token::Token::Operator(token::Operator::PLUS);
             }
             '-' => {
-                tok = token::Token::MINUS(self.ch);
+                tok = token::Token::Operator(token::Operator::MINUS);
             }
             '!' => {
-                tok = token::Token::BANG(self.ch);
+                tok = token::Token::Operator(token::Operator::BANG);
+                if self.peek_char() == '=' {
+                    self.read_char(); // consume '='
+                    tok = token::Token::Operator(token::Operator::NE);
+                }
             }
             '/' => {
-                tok = token::Token::SLASH(self.ch);
+                tok = token::Token::Operator(token::Operator::DIVIDE);
             }
             '*' => {
-                tok = token::Token::ASTERISK(self.ch);
+                tok = token::Token::Operator(token::Operator::ASTERISK);
             }
             '<' => {
-                tok = token::Token::LT(self.ch);
+                tok = token::Token::Operator(token::Operator::LT);
+                if self.peek_char() == '=' {
+                    self.read_char(); // consume '='
+                    tok = token::Token::Operator(token::Operator::LTorE);
+                }
             }
             '>' => {
-                tok = token::Token::GT(self.ch);
+                tok = token::Token::Operator(token::Operator::GT);
+                if self.peek_char() == '=' {
+                    self.read_char(); // consume '='
+                    tok = token::Token::Operator(token::Operator::GTorE);
+                }
             }
             ';' => {
                 tok = token::Token::SEMICOLON(self.ch);

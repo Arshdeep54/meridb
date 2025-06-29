@@ -1,9 +1,9 @@
-use meridb::{storage::record::Value, Page, Record};
+use meridb::{parser::ast::ASTValue, Page, Record};
 
 fn create_test_record(id: u64) -> Record {
     let mut record = Record::new(id);
-    record.set_value("name", Value::Text("Test".to_string()));
-    record.set_value("age", Value::Integer(25));
+    record.set_value("name", ASTValue::String("Test".to_string()));
+    record.set_value("age", ASTValue::Int(25));
     record
 }
 

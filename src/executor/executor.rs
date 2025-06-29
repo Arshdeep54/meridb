@@ -1,11 +1,7 @@
 use super::result::{ExecutionResult, QueryResult, ResultSet};
 use crate::database::session::DatabaseSession;
 use crate::parser::ast::{ASTNode, ASTValue, Assignment, ColumnDefinition, Condition};
-use crate::storage::{
-    record::{Record, Value},
-    table::Table,
-    types::Column,
-};
+use crate::storage::{record::Record, table::Table, types::Column};
 use crate::types::DataType;
 
 pub struct QueryExecutor {
@@ -67,7 +63,7 @@ impl QueryExecutor {
 
         for record in records {
             if let Some(ref condition) = where_clause {
-                if !self.evaluate_condition(&record, condition) {
+                if !record.evaluate_condition(condition) {
                     continue;
                 }
             }
@@ -121,15 +117,14 @@ impl QueryExecutor {
             let mut updates = Vec::new();
             for record in table.scan() {
                 if let Some(ref condition) = where_clause {
-                    if !self.evaluate_condition(record, condition) {
+                    if !record.evaluate_condition(condition) {
                         continue;
                     }
                 }
 
                 let mut updated_record = record.clone();
                 for assignment in &assignments {
-                    let value = self.ast_value_to_storage_value(&assignment.value)?;
-                    updated_record.set_value(&assignment.column, value);
+                    updated_record.set_value(&assignment.column, assignment.value.clone());
                 }
                 updates.push(updated_record);
             }
@@ -168,7 +163,7 @@ impl QueryExecutor {
                 .scan()
                 .filter(|record| {
                     if let Some(ref condition) = where_clause {
-                        self.evaluate_condition(record, condition)
+                        record.evaluate_condition(condition)
                     } else {
                         true
                     }
@@ -216,32 +211,6 @@ impl QueryExecutor {
         Ok(QueryResult::Create)
     }
 
-    fn evaluate_condition(&self, record: &Record, condition: &Condition) -> bool {
-        let column_value = record.get_value(&condition.column).unwrap_or(&Value::Null);
-        let condition_value = self
-            .ast_value_to_storage_value(&condition.value)
-            .unwrap_or(Value::Null);
-
-        match condition.operator.as_str() {
-            "=" => column_value == &condition_value,
-            "<>" => column_value != &condition_value,
-            ">" => column_value > &condition_value,
-            "<" => column_value < &condition_value,
-            ">=" => column_value >= &condition_value,
-            "<=" => column_value <= &condition_value,
-            _ => false,
-        }
-    }
-
-    fn ast_value_to_storage_value(&self, ast_value: &ASTValue) -> Result<Value, String> {
-        Ok(match ast_value {
-            ASTValue::Int(i) => Value::Integer(*i as i64),
-            ASTValue::String(s) => Value::Text(s.clone()),
-            ASTValue::Boolean(b) => Value::Boolean(*b),
-            ASTValue::Null => Value::Null,
-        })
-    }
-
     fn create_record_from_values(
         &self,
         values: Vec<ASTValue>,
@@ -258,8 +227,7 @@ impl QueryExecutor {
         }
 
         for (value, column) in values.iter().zip(table.columns.iter()) {
-            let storage_value = self.ast_value_to_storage_value(value)?;
-            record.set_value(&column.name, storage_value);
+            record.set_value(&column.name, value.clone());
         }
 
         Ok(record)

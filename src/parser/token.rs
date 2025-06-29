@@ -11,14 +11,6 @@ pub enum Token {
     INT(Vec<char>),   // Integer literals
 
     // Operators and delimiters
-    ASSIGN(char),      // '='
-    PLUS(char),        // '+'
-    MINUS(char),       // '-'
-    BANG(char),        // '!'
-    ASTERISK(char),    // '*'
-    SLASH(char),       // '/'
-    LT(char),          // '<'
-    GT(char),          // '>'
     COMMA(char),       // ','
     SEMICOLON(char),   // ';'
     LPAREN(char),      // '('
@@ -36,6 +28,7 @@ pub enum Token {
     Command(Command),
     Helper(Helper),
     DataType(DataType),
+    Operator(Operator),
 }
 
 // Command keywords
@@ -116,6 +109,22 @@ pub enum DataType {
     MEDIUMINT,
     BIGINT,
 }
+#[derive(PartialEq, Clone, Debug)]
+pub enum Operator {
+    EQUALS,   // '='
+    NE,       // '!=' or '<>'
+    LT,       // '<'
+    GT,       // '>'
+    LTorE,    // '<='
+    GTorE,    // '>='
+    PLUS,     // '+'
+    MINUS,    // '-'
+    DIVIDE,   // '/'
+    BANG,     // '!'
+    ASTERISK, // '*'
+    AND,      // 'AND'
+    OR,       // 'OR'
+}
 
 pub fn get_keyword_token(ident: &Vec<char>) -> Result<Token, String> {
     let identifier: String = ident.iter().collect();
@@ -129,6 +138,9 @@ pub fn get_keyword_token(ident: &Vec<char>) -> Result<Token, String> {
     }
     if let Ok(data_type) = match_data_type(&lowercase_identifier) {
         return Ok(Token::DataType(data_type));
+    }
+    if let Ok(operator) = match_operator(&lowercase_identifier) {
+        return Ok(Token::Operator(operator));
     }
 
     match lowercase_identifier.as_str() {
@@ -221,6 +233,24 @@ fn match_data_type(keyword: &str) -> Result<DataType, String> {
     }
 }
 
+fn match_operator(op: &str) -> Result<Operator, String> {
+    match op.to_lowercase().as_str() {
+        "=" => Ok(Operator::EQUALS),
+        "!=" => Ok(Operator::NE),
+        "<" => Ok(Operator::LT),
+        ">" => Ok(Operator::GT),
+        "<=" => Ok(Operator::LTorE),
+        ">=" => Ok(Operator::GTorE),
+        "+" => Ok(Operator::PLUS),
+        "-" => Ok(Operator::MINUS),
+        "*" => Ok(Operator::ASTERISK),
+        "/" => Ok(Operator::DIVIDE),
+        "!" => Ok(Operator::BANG),
+        "and" => Ok(Operator::AND),
+        "or" => Ok(Operator::OR),
+        _ => Err(String::from("Not a valid operator")),
+    }
+}
 impl fmt::Display for Helper {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
