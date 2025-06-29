@@ -1,3 +1,5 @@
+use std::iter;
+
 use super::{
     ast::{ASTNode, ASTValue, Assignment, ColumnDefinition, Condition},
     token::{Command, Token},
@@ -338,4 +340,21 @@ impl Parser {
             where_clause,
         })
     }
+}
+
+impl Parser {
+    pub fn parse_use(&mut self)->Result<ASTNode, String>{
+        self.expect(Token::Command(Command::USE))?;
+
+        let database_name= if let Some(Token::IDENT(name)) = self.consume() {
+            name.iter().collect::<String>()
+        } else {
+            return Err("Expected Database name".to_string());
+        };
+
+        Ok(ASTNode::USE{
+            database_name,
+        })
+    }
+    
 }

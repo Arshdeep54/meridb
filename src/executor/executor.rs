@@ -38,9 +38,14 @@ impl QueryExecutor {
                 table_name,
                 columns,
             } => self.execute_create_table(table_name, columns),
-            ASTNode::CreateDatabase { database_name } => {
+            ASTNode::CreateDatabase { database_name 
+            } => {
                 self.session.create_database(&database_name);
                 Ok(QueryResult::Create)
+            },
+            ASTNode::USE { database_name } => { 
+                self.session.use_database(&database_name);
+                Ok(QueryResult::Use(database_name))
             }
         }
     }
