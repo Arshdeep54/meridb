@@ -1,5 +1,5 @@
 use meridb::parser::lexer::Lexer;
-use meridb::parser::token::{Command, DataType, Helper, Token};
+use meridb::parser::token::{Command, DataType, Helper, Operator, Token};
 
 #[test]
 fn test_basic_tokens() {
@@ -8,13 +8,12 @@ fn test_basic_tokens() {
 
     let expected_tokens = vec![
         Token::Command(Command::SELECT),
-        Token::ASTERISK('*'),
+        Token::Operator(Operator::ASTERISK),
         Token::Command(Command::FROM),
         Token::IDENT("users".chars().collect()),
         Token::Command(Command::WHERE),
         Token::IDENT("age".chars().collect()),
-        Token::GT('>'),
-        Token::ASSIGN('='),
+        Token::Operator(Operator::GTorE),
         Token::INT("18".chars().collect()),
         Token::SEMICOLON(';'),
     ];
@@ -60,18 +59,17 @@ fn test_operators() {
     let expected_tokens = vec![
         Token::Helper(Helper::COLUMN),
         Token::INT("1".chars().collect()),
-        Token::ASSIGN('='),
+        Token::Operator(Operator::EQUALS),
         Token::INT("5".chars().collect()),
-        Token::IDENT("AND".chars().collect()),
+        Token::Operator(Operator::AND),
         Token::Helper(Helper::COLUMN),
         Token::INT("2".chars().collect()),
-        Token::BANG('!'),
-        Token::ASSIGN('='),
+        Token::Operator(Operator::NE),
         Token::INT("10".chars().collect()),
-        Token::IDENT("OR".chars().collect()),
+        Token::Operator(Operator::OR),
         Token::Helper(Helper::COLUMN),
         Token::INT("3".chars().collect()),
-        Token::LT('<'),
+        Token::Operator(Operator::LT),
         Token::INT("15".chars().collect()),
     ];
 

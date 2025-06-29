@@ -2,7 +2,7 @@ use std::iter;
 
 use super::{
     ast::{ASTNode, ASTValue, Assignment, ColumnDefinition, Condition},
-    token::{Command, Token},
+    token::{Command, Operator, Token},
 };
 
 pub struct Parser {
@@ -71,7 +71,6 @@ impl Parser {
                     let mut constraints = Vec::new();
                     while let Some(Token::Helper(constr)) = self.peek() {
                         constraints.push(constr.to_string().chars().collect());
-                        constraints.push(constr.to_string().chars().collect());
                         self.consume();
                     }
 
@@ -116,43 +115,72 @@ impl Parser {
 }
 
 impl Parser {
-    fn parse_condition(&mut self) -> Result<Condition, String> {
-        let column = if let Some(Token::IDENT(col)) = self.consume() {
-            col.iter().collect::<String>()
-        } else {
-            return Err("Expected column name in condition".to_string());
-        };
-
-        let operator = match self.consume() {
-            Some(Token::ASSIGN('=')) => "=".to_string(),
-            Some(Token::LT('<')) => "<".to_string(),
-            Some(Token::GT('>')) => {
-                if let Some(Token::ASSIGN('=')) = self.peek() {
-                    self.consume();
-                    ">=".to_string()
+    pub fn parse_condition(&mut self) -> Result<Condition, String> {
+        self.parse_expression()
+    }
+    fn parse_expression(&mut self) -> Result<Condition, String> {
+        let mut left = self.parse_term()?;
+        while let Some(Token::Operator(op)) = self.peek() {
+            if op == &Operator::AND || op == &Operator::OR {
+                let op = if let Token::Operator(op) = self.consume().unwrap() {
+                    op.clone()
                 } else {
-                    ">".to_string()
-                }
+                    return Err("Expected AND or OR operator".to_string());
+                };
+                let right = self.parse_term()?;
+                left = Condition::Comparison {
+                    operator: op,
+                    left: Box::new(left),
+                    right: Box::new(right),
+                };
+            } else {
+                break;
             }
-            Some(Token::BANG('!')) => {
-                if let Some(Token::ASSIGN('=')) = self.consume() {
-                    "!=".to_string()
-                } else {
-                    return Err("Expected '=' after '!'".to_string());
-                }
-            }
-            _ => return Err("Expected operator".to_string()),
-        };
-
-        let value = self.parse_value()?;
-
-        Ok(Condition {
-            column,
-            operator,
-            value,
-        })
+        }
+        Ok(left)
     }
 
+    fn parse_term(&mut self) -> Result<Condition, String> {
+        if let Some(Token::LPAREN('(')) = self.peek() {
+            self.consume();
+            let expr = self.parse_expression()?;
+            self.expect(Token::RPAREN(')'))?;
+            return Ok(expr);
+        }
+        let left = match self.consume() {
+            Some(Token::IDENT(col)) => Condition::Column(col.iter().collect::<String>()),
+            Some(token) => {
+                return Err(format!("Unexpected token in condition: {:?}", token));
+            }
+            None => {
+                return Err("Expected column name or expression".to_string());
+            }
+        };
+        let op = match self.consume() {
+            Some(Token::Operator(op)) => op.clone(),
+            Some(token) => return Err(format!("Unexpected token in condition: {:?}", token)),
+            None => return Err("Expected operator".to_string()),
+        };
+
+        let right = match self.peek() {
+            Some(Token::IDENT(col)) => {
+                let col_name = col.iter().collect::<String>();
+                self.consume(); // consume IDENT
+                Condition::Column(col_name)
+            }
+            Some(Token::INT(_)) | Some(Token::SINGLEQUOTE(_)) => {
+                let value = self.parse_value()?; // consume happens *inside* parse_value
+                Condition::Value(value)
+            }
+            Some(token) => return Err(format!("Unexpected token in condition: {:?}", token)),
+            None => return Err("Expected column name or value in condition".to_string()),
+        };
+        Ok(Condition::Comparison {
+            operator: op,
+            left: Box::new(left),
+            right: Box::new(right),
+        })
+    }
     fn parse_value(&mut self) -> Result<ASTValue, String> {
         match self.peek() {
             Some(Token::INT(val)) => {
@@ -240,11 +268,6 @@ impl Parser {
                         .collect::<String>()
                         .parse::<i64>()
                         .map_err(|_| "Invalid integer value".to_string())?;
-                    let int_value = val
-                        .iter()
-                        .collect::<String>()
-                        .parse::<i64>()
-                        .map_err(|_| "Invalid integer value".to_string())?;
                     values.push(ASTValue::Int(int_value));
                     self.consume();
                 }
@@ -288,7 +311,7 @@ impl Parser {
         let mut assignments = Vec::new();
         while let Some(Token::IDENT(col)) = self.consume() {
             let column_name = col.iter().collect::<String>();
-            self.expect(Token::ASSIGN('='))?;
+            self.expect(Token::Operator(Operator::EQUALS))?;
             let value = self.parse_value()?;
             assignments.push(Assignment {
                 column: column_name,

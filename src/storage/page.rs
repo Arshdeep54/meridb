@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::parser::ast::ASTValue;
+
 use super::record::Record;
 use std::collections::HashMap;
 
@@ -58,7 +60,7 @@ impl Page {
         // Simplified size calculation
         // In a real implementation, this would need to account for actual serialized size
         std::mem::size_of::<u64>() + // record id
-        record.data.len() * (std::mem::size_of::<String>() + std::mem::size_of::<super::record::Value>()) +
+        record.data.len() * (std::mem::size_of::<String>() + std::mem::size_of::<ASTValue>()) +
         std::mem::size_of::<u64>() // timestamp
     }
 
@@ -69,13 +71,12 @@ impl Page {
 
 #[cfg(test)]
 mod tests {
-    use super::super::record::Value;
     use super::*;
 
     fn create_test_record(id: u64) -> Record {
         let mut record = Record::new(id);
-        record.set_value("name", Value::Text("Test".to_string()));
-        record.set_value("age", Value::Integer(25));
+        record.set_value("name", ASTValue::String("Test".to_string()));
+        record.set_value("age", ASTValue::Int(25));
         record
     }
 

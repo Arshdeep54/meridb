@@ -1,7 +1,4 @@
-use meridb::{
-    storage::{record::Value, types::Column},
-    DataType, Record, Table,
-};
+use meridb::{parser::ast::ASTValue, storage::types::Column, DataType, Record, Table};
 
 fn create_test_table() -> Table {
     let columns = vec![
@@ -14,9 +11,9 @@ fn create_test_table() -> Table {
 
 fn create_test_record() -> Record {
     let mut record = Record::new(0);
-    record.set_value("id", Value::Integer(1));
-    record.set_value("name", Value::Text("Test".to_string()));
-    record.set_value("age", Value::Integer(25));
+    record.set_value("id", ASTValue::Int(1));
+    record.set_value("name", ASTValue::String("Test".to_string()));
+    record.set_value("age", ASTValue::Int(25));
     record
 }
 
@@ -60,13 +57,13 @@ fn test_table_schema_validation() {
 
     // Test invalid record (wrong type)
     let mut invalid_record = Record::new(0);
-    invalid_record.set_value("id", Value::Text("invalid".to_string()));
-    invalid_record.set_value("name", Value::Text("Test".to_string()));
+    invalid_record.set_value("id", ASTValue::String("invalid".to_string()));
+    invalid_record.set_value("name", ASTValue::String("Test".to_string()));
     assert!(table.insert_record(invalid_record).is_err());
 
     // Test invalid record (missing required field)
     let mut incomplete_record = Record::new(0);
-    incomplete_record.set_value("id", Value::Integer(2));
+    incomplete_record.set_value("id", ASTValue::Int(2));
     assert!(table.insert_record(incomplete_record).is_err());
 }
 
@@ -78,8 +75,8 @@ fn test_table_multi_page() {
     // Insert many records to force multiple pages
     for i in 0..1000 {
         let mut record = create_test_record();
-        record.set_value("id", Value::Integer(i));
-        record.set_value("name", Value::Text(format!("Test{}", i)));
+        record.set_value("id", ASTValue::Int(i));
+        record.set_value("name", ASTValue::String(format!("Test{}", i)));
 
         let record_id = table.insert_record(record).unwrap();
         inserted_records.push(record_id);

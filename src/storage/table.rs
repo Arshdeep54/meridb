@@ -1,7 +1,6 @@
 use super::page::Page;
 use super::record::Record;
 use super::types::Column;
-use crate::types::DataType;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -105,9 +104,8 @@ impl Table {
 
 #[cfg(test)]
 mod tests {
-    use super::super::record::Value;
     use super::*;
-    use crate::types::DataType;
+    use crate::{parser::ast::ASTValue, types::DataType};
 
     fn create_test_table() -> Table {
         let columns = vec![
@@ -120,9 +118,9 @@ mod tests {
 
     fn create_test_record() -> Record {
         let mut record = Record::new(0);
-        record.set_value("id", Value::Integer(1));
-        record.set_value("name", Value::Text("Test".to_string()));
-        record.set_value("age", Value::Integer(25));
+        record.set_value("id", ASTValue::Int(1));
+        record.set_value("name", ASTValue::String("Test".to_string()));
+        record.set_value("age", ASTValue::Int(25));
         record
     }
 
@@ -153,7 +151,7 @@ mod tests {
     fn test_record_validation() {
         let mut table = create_test_table();
         let mut invalid_record = Record::new(0);
-        invalid_record.set_value("id", Value::Text("invalid".to_string())); // Wrong type
+        invalid_record.set_value("id", ASTValue::String("invalid".to_string())); // Wrong type
 
         assert!(table.insert_record(invalid_record).is_err());
     }
