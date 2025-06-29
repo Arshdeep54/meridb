@@ -28,15 +28,7 @@ pub fn parse_command(session: &mut DatabaseSession, command: &str) {
         Some(Token::Command(Command::INSERT)) => parser.parse_insert(),
         Some(Token::Command(Command::UPDATE)) => parser.parse_update(),
         Some(Token::Command(Command::DELETE)) => parser.parse_delete(),
-        Some(Token::Command(Command::USE)) => {
-            if let Some(Token::IDENT(db_name)) = parser.tokens.get(1) {
-                let db_name_str = db_name.iter().collect::<String>();
-                session.use_database(&db_name_str);
-                return;
-            } else {
-                Err("Invalid USE command syntax".to_string())
-            }
-        }
+        Some(Token::Command(Command::USE)) => parser.parse_use(),
         Some(Token::Command(Command::SHOW)) => {
             if let Some(Token::Command(Command::DATABASES)) = parser.tokens.get(1) {
                 let databases = crate::database::list_databases();

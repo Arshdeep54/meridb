@@ -23,11 +23,12 @@ impl ResultSet {
 #[derive(Debug)]
 pub enum QueryResult {
     Select(ResultSet),
-    Insert(u64), // Number of rows inserted
-    Update(u64), // Number of rows updated
-    Delete(u64), // Number of rows deleted
-    Create,      // Table created successfully
-    Drop,        // Table dropped successfully
+    Insert(u64),    // Number of rows inserted
+    Update(u64),    // Number of rows updated
+    Delete(u64),    // Number of rows deleted
+    Create,         // Table created successfully
+    Drop,          // Table dropped successfully
+    Use(String),
 }
 
 impl fmt::Display for QueryResult {
@@ -42,6 +43,7 @@ impl fmt::Display for QueryResult {
             QueryResult::Delete(count) => write!(f, "{} row(s) deleted", count),
             QueryResult::Create => write!(f, "Table created successfully"),
             QueryResult::Drop => write!(f, "Table dropped successfully"),
+            QueryResult::Use(database_name) => write!(f, "Using {}",database_name)
         }
     }
 }
