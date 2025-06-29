@@ -55,4 +55,7 @@ pub enum ASTNode {
     CreateDatabase {
         database_name: String,
     },
+    USE {
+        database_name: String,
+    }
 }
