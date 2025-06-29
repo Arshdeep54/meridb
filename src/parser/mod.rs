@@ -1,13 +1,12 @@
-pub mod parser;
-pub mod lexer;
-pub mod token;
 pub mod ast;
+pub mod lexer;
+pub mod parser;
+pub mod token;
 
 use parser::Parser;
 use token::{Command, Token};
 
 use crate::database::session::DatabaseSession;
-
 
 pub fn parse_command(session: &mut DatabaseSession, command: &str) {
     print!("Parsing command: ");

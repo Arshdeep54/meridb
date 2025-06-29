@@ -9,22 +9,22 @@ pub enum Token {
     INT(Vec<char>),   // Integer literals
 
     // Operators and delimiters
-    ASSIGN(char),     // '='
-    PLUS(char),       // '+'
-    MINUS(char),      // '-'
-    BANG(char),       // '!'
-    ASTERISK(char),   // '*'
-    SLASH(char),      // '/'
-    LT(char),         // '<'
-    GT(char),         // '>'
-    COMMA(char),      // ','
-    SEMICOLON(char),  // ';'
-    LPAREN(char),     // '('
-    RPAREN(char),     // ')'
-    LBRACE(char),     // '{'
-    RBRACE(char),     // '}'
-    QUOTE(char),      // '"'
-    SINGLEQUOTE(char),// '\''
+    ASSIGN(char),      // '='
+    PLUS(char),        // '+'
+    MINUS(char),       // '-'
+    BANG(char),        // '!'
+    ASTERISK(char),    // '*'
+    SLASH(char),       // '/'
+    LT(char),          // '<'
+    GT(char),          // '>'
+    COMMA(char),       // ','
+    SEMICOLON(char),   // ';'
+    LPAREN(char),      // '('
+    RPAREN(char),      // ')'
+    LBRACE(char),      // '{'
+    RBRACE(char),      // '}'
+    QUOTE(char),       // '"'
+    SINGLEQUOTE(char), // '\''
 
     // Boolean literals
     TRUE,
@@ -39,24 +39,81 @@ pub enum Token {
 // Command keywords
 #[derive(PartialEq, Debug)]
 pub enum Command {
-    CREATE, UPDATE,INSERT, DELETE, SELECT, FROM, WHERE, ORDER, ASC, DESC, BY, LIMIT, OFFSET, INTO, VALUES,
-    TABLE, DATABASE, USE, SHOW,
+    CREATE,
+    UPDATE,
+    INSERT,
+    DELETE,
+    SELECT,
+    FROM,
+    WHERE,
+    ORDER,
+    ASC,
+    DESC,
+    BY,
+    LIMIT,
+    OFFSET,
+    INTO,
+    VALUES,
+    TABLE,
+    DATABASE,
+    USE,
+    SHOW,
 }
 
 // Helper keywords
 #[derive(PartialEq, Debug)]
 pub enum Helper {
-    ON, PRIMARY, KEY, UNIQUE, NOT, NULL, CONSTRAINT, FOREIGN, REFERENCES, ADD, COLUMN,
-    ALTER, DROP, INDEXES, CONSTRAINTS, FOREIGNKEYS, COLUMNS, PRIMARYKEYS, UNIQUEKEYS,
-    NOTNULLS, REFERENCESKEYS, ADDS, SET, DEFAULT, AUTOINCREMENT,
+    ON,
+    PRIMARY,
+    KEY,
+    UNIQUE,
+    NOT,
+    NULL,
+    CONSTRAINT,
+    FOREIGN,
+    REFERENCES,
+    ADD,
+    COLUMN,
+    ALTER,
+    DROP,
+    INDEXES,
+    CONSTRAINTS,
+    FOREIGNKEYS,
+    COLUMNS,
+    PRIMARYKEYS,
+    UNIQUEKEYS,
+    NOTNULLS,
+    REFERENCESKEYS,
+    ADDS,
+    SET,
+    DEFAULT,
+    AUTOINCREMENT,
 }
 
 // Data type keywords
-#[derive(PartialEq, Debug)]
-#[derive(Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum DataType {
-    INTEGER, VARCHAR, TEXT, BOOLEAN, DATE, TIME, TIMESTAMP, DATETIME, CHAR, BLOB, ENUM,
-    JSON, DECIMAL, FLOAT, DOUBLE, REAL, NUMERIC, TINYINT, SMALLINT, MEDIUMINT, BIGINT,
+    INTEGER,
+    VARCHAR,
+    TEXT,
+    BOOLEAN,
+    DATE,
+    TIME,
+    TIMESTAMP,
+    DATETIME,
+    CHAR,
+    BLOB,
+    ENUM,
+    JSON,
+    DECIMAL,
+    FLOAT,
+    DOUBLE,
+    REAL,
+    NUMERIC,
+    TINYINT,
+    SMALLINT,
+    MEDIUMINT,
+    BIGINT,
 }
 
 pub fn get_keyword_token(ident: &Vec<char>) -> Result<Token, String> {

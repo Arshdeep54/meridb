@@ -133,11 +133,11 @@ impl Editor {
     fn redraw_line(&self, prompt: &str) -> io::Result<()> {
         clear_line();
         print!("{}{}", prompt, self.current_buffer);
-        
+
         if self.cursor_position < self.current_buffer.len() {
             print!("\x1b[{}D", self.current_buffer.len() - self.cursor_position);
         }
-        
+
         io::stdout().flush()
     }
 }

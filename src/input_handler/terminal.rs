@@ -1,8 +1,8 @@
+use libc::STDIN_FILENO;
 use std::io::{self, Read, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use termios::{tcsetattr, Termios, ECHO, ICANON, TCSANOW};
-use libc::STDIN_FILENO;
 
 pub struct RawTerminal {
     original_termios: Termios,

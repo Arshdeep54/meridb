@@ -1,6 +1,6 @@
 use clap::Parser;
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 
 mod commands;
 mod database;
@@ -24,7 +24,7 @@ fn main() {
     if !data_dir.exists() {
         fs::create_dir(&data_dir).expect("Failed to create data directory");
     }
-    
+
     let history_file = data_dir.join("history.txt");
     let mut input_handler = input_handler::InputHandler::with_history_file(history_file)
         .expect("Failed to initialize input handler");

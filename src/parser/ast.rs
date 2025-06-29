@@ -1,6 +1,5 @@
 use super::token::DataType;
 
-
 #[derive(Debug)]
 pub enum ASTValue {
     Int(i64),

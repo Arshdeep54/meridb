@@ -68,7 +68,7 @@ impl Parser {
 
                     let mut constraints = Vec::new();
                     while let Some(Token::Helper(constr)) = self.peek() {
-                        constraints.push(constr.to_string().chars().collect()); 
+                        constraints.push(constr.to_string().chars().collect());
                         self.consume();
                     }
 
@@ -97,9 +97,7 @@ impl Parser {
             columns,
         })
     }
-
 }
-
 
 impl Parser {
     fn parse_condition(&mut self) -> Result<Condition, String> {
@@ -135,9 +133,13 @@ impl Parser {
     fn parse_value(&mut self) -> Result<ASTValue, String> {
         match self.consume() {
             Some(Token::INT(val)) => {
-                let int_value = val.iter().collect::<String>().parse::<i64>().map_err(|_| "Invalid integer value".to_string())?;
+                let int_value = val
+                    .iter()
+                    .collect::<String>()
+                    .parse::<i64>()
+                    .map_err(|_| "Invalid integer value".to_string())?;
                 Ok(ASTValue::Int(int_value))
-            },
+            }
             Some(Token::IDENT(val)) => Ok(ASTValue::String(val.iter().collect())),
             Some(Token::TRUE) => Ok(ASTValue::Boolean(true)),
             Some(Token::FALSE) => Ok(ASTValue::Boolean(false)),
@@ -202,10 +204,14 @@ impl Parser {
         while let Some(token) = self.peek() {
             match token {
                 Token::INT(val) => {
-                    let int_value = val.iter().collect::<String>().parse::<i64>().map_err(|_| "Invalid integer value".to_string())?;
+                    let int_value = val
+                        .iter()
+                        .collect::<String>()
+                        .parse::<i64>()
+                        .map_err(|_| "Invalid integer value".to_string())?;
                     values.push(ASTValue::Int(int_value));
                     self.consume();
-                },
+                }
                 Token::IDENT(val) => {
                     values.push(ASTValue::String(val.iter().collect()));
                     self.consume();

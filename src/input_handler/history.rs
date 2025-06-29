@@ -35,7 +35,7 @@ impl History {
         if command.trim().is_empty() {
             return;
         }
-        
+
         if self.commands.back().map_or(true, |last| last != &command) {
             if self.commands.len() >= self.max_size {
                 self.commands.pop_front();

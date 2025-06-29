@@ -5,7 +5,7 @@ pub struct Lexer {
     input: Vec<char>,
     pub position: usize,
     pub read_position: usize,
-    pub ch: char
+    pub ch: char,
 }
 
 fn is_letter(ch: char) -> bool {
@@ -22,7 +22,7 @@ impl Lexer {
             input: input,
             position: 0,
             read_position: 0,
-            ch: '0'
+            ch: '0',
         }
     }
 
@@ -65,52 +65,52 @@ impl Lexer {
         match self.ch {
             '=' => {
                 tok = token::Token::ASSIGN(self.ch);
-            },
+            }
             '+' => {
                 tok = token::Token::PLUS(self.ch);
-            },
+            }
             '-' => {
                 tok = token::Token::MINUS(self.ch);
-            },
+            }
             '!' => {
                 tok = token::Token::BANG(self.ch);
-            },
+            }
             '/' => {
                 tok = token::Token::SLASH(self.ch);
-            },
+            }
             '*' => {
                 tok = token::Token::ASTERISK(self.ch);
-            },
+            }
             '<' => {
                 tok = token::Token::LT(self.ch);
-            },
+            }
             '>' => {
                 tok = token::Token::GT(self.ch);
-            },
+            }
             ';' => {
                 tok = token::Token::SEMICOLON(self.ch);
-            },
+            }
             '(' => {
                 tok = token::Token::LPAREN(self.ch);
-            },
+            }
             ')' => {
                 tok = token::Token::RPAREN(self.ch);
-            },
+            }
             ',' => {
                 tok = token::Token::COMMA(self.ch);
-            },
+            }
             '{' => {
                 tok = token::Token::LBRACE(self.ch);
-            },
+            }
             '}' => {
                 tok = token::Token::RBRACE(self.ch);
-            },
+            }
             '"' => {
                 tok = token::Token::QUOTE(self.ch);
-            },
+            }
             '\'' => {
                 tok = token::Token::SINGLEQUOTE(self.ch);
-            },
+            }
             '0' => {
                 tok = token::Token::EOF;
             }
@@ -120,7 +120,7 @@ impl Lexer {
                     match token::get_keyword_token(&ident) {
                         Ok(keywork_token) => {
                             return keywork_token;
-                        },
+                        }
                         Err(_err) => {
                             return token::Token::IDENT(ident);
                         }
@@ -128,9 +128,8 @@ impl Lexer {
                 } else if is_digit(self.ch) {
                     let ident: Vec<char> = read_number(self);
                     return token::Token::INT(ident);
-                } 
-                else {
-                    return token::Token::ILLEGAL
+                } else {
+                    return token::Token::ILLEGAL;
                 }
             }
         }
@@ -139,7 +138,7 @@ impl Lexer {
     }
 }
 
-pub fn get_tokens(input: &str)-> Vec<token::Token>{
+pub fn get_tokens(input: &str) -> Vec<token::Token> {
     let mut l = Lexer::new(input.chars().collect());
     l.read_char();
     let mut tokens: Vec<token::Token> = Vec::new();

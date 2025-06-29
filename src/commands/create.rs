@@ -1,14 +1,20 @@
 use crate::database;
-use crate::database::table::{create_table, Table, Column, DataType};
 use crate::database::session::DatabaseSession;
+use crate::database::table::{create_table, Column, DataType, Table};
 
 pub fn handle_create(session: &DatabaseSession, command: &str) {
     let trimmed_command = command.trim_end_matches(';').trim();
     let parts: Vec<&str> = trimmed_command.split_whitespace().collect();
 
-    if parts.len() >= 3 && parts[0].eq_ignore_ascii_case("CREATE") && parts[1].eq_ignore_ascii_case("DATABASE") {
+    if parts.len() >= 3
+        && parts[0].eq_ignore_ascii_case("CREATE")
+        && parts[1].eq_ignore_ascii_case("DATABASE")
+    {
         handle_create_database(parts);
-    } else if parts.len() >= 4 && parts[0].eq_ignore_ascii_case("CREATE") && parts[1].eq_ignore_ascii_case("TABLE") {
+    } else if parts.len() >= 4
+        && parts[0].eq_ignore_ascii_case("CREATE")
+        && parts[1].eq_ignore_ascii_case("TABLE")
+    {
         handle_create_table(session, trimmed_command);
     } else {
         println!("Invalid CREATE command");
@@ -80,7 +86,9 @@ fn handle_create_table(session: &DatabaseSession, trimmed_command: &str) {
                 _ => {
                     // Attempt to parse default value (e.g., DEFAULT 0)
                     if part.starts_with("DEFAULT") {
-                        if let Some(default_val) = column_parts.get(column_parts.iter().position(|&x| x == part).unwrap() + 1) {
+                        if let Some(default_val) = column_parts
+                            .get(column_parts.iter().position(|&x| x == part).unwrap() + 1)
+                        {
                             default_value = Some(default_val.to_string());
                         }
                     }
@@ -111,7 +119,10 @@ fn handle_create_table(session: &DatabaseSession, trimmed_command: &str) {
         if let Err(e) = create_table(current_db_name, table) {
             println!("Failed to create table: {}", e);
         } else {
-            println!("Table {} created successfully in database {}.", table_name, current_db_name);
+            println!(
+                "Table {} created successfully in database {}.",
+                table_name, current_db_name
+            );
         }
     } else {
         println!("No database selected. Use the `USE` command to select a database.");

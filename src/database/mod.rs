@@ -13,7 +13,10 @@ fn create_database_file(db_name: &str) -> io::Result<()> {
     }
     match File::create(&file_path) {
         Ok(_) => {
-            println!("Database '{}' created successfully at {}", db_name, file_path);
+            println!(
+                "Database '{}' created successfully at {}",
+                db_name, file_path
+            );
             Ok(())
         }
         Err(e) => {

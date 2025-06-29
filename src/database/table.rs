@@ -29,7 +29,7 @@ pub struct Column {
     pub(crate) data_type: DataType,
     pub(crate) is_primary_key: bool,
     pub(crate) is_nullable: bool,
-    pub(crate) default_value: Option<String>, 
+    pub(crate) default_value: Option<String>,
 }
 
 impl Column {
@@ -57,18 +57,23 @@ pub struct Table {
 }
 pub fn create_table(db_name: &str, table: Table) -> io::Result<()> {
     let db_path = PathBuf::from(format!("data/{}.db", db_name));
-    
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(db_path)?;
+
+    let mut file = OpenOptions::new().create(true).append(true).open(db_path)?;
 
     writeln!(file, "Table: {}", table.name)?;
     for column in &table.columns {
-        writeln!(file, "Column: {} Type: {} Primary Key: {} Nullable: {} Default: {:?}", 
-                 column.name, column.data_type, 
-                 column.is_primary_key, column.is_nullable, 
-                 column.default_value.as_ref().unwrap_or(&String::from("None")))?;
+        writeln!(
+            file,
+            "Column: {} Type: {} Primary Key: {} Nullable: {} Default: {:?}",
+            column.name,
+            column.data_type,
+            column.is_primary_key,
+            column.is_nullable,
+            column
+                .default_value
+                .as_ref()
+                .unwrap_or(&String::from("None"))
+        )?;
     }
 
     Ok(())
