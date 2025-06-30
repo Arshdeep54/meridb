@@ -1,10 +1,10 @@
 use super::{
     ast::{ASTNode, ASTValue, Assignment, ColumnDefinition, Condition},
-    token::{Command, Token},
+    token::{Command, Operator, Token},
 };
 
 pub struct Parser {
-    tokens: Vec<Token>,
+    pub tokens: Vec<Token>,
     position: usize,
 }
 
@@ -73,9 +73,9 @@ impl Parser {
                     }
 
                     columns.push(ColumnDefinition {
-                        Column_name: column_name,
-                        Column_type: column_type,
-                        Columns_Constraints: constraints,
+                        column_name,
+                        column_type,
+                        columns_constraints: constraints,
                     });
 
                     if let Some(Token::COMMA(',')) = self.peek() {
@@ -97,54 +97,110 @@ impl Parser {
             columns,
         })
     }
+    pub fn parse_create_database(&mut self) -> Result<ASTNode, String> {
+        self.expect(Token::Command(super::token::Command::CREATE))?;
+
+        self.expect(Token::Command(super::token::Command::DATABASE))?;
+
+        let database_name = if let Some(Token::IDENT(name)) = self.consume() {
+            name.iter().collect::<String>()
+        } else {
+            return Err("Expected database name".to_string());
+        };
+
+        Ok(ASTNode::CreateDatabase { database_name })
+    }
 }
 
 impl Parser {
-    fn parse_condition(&mut self) -> Result<Condition, String> {
-        let column = if let Some(Token::IDENT(col)) = self.consume() {
-            col.iter().collect::<String>()
-        } else {
-            return Err("Expected column name in condition".to_string());
-        };
-
-        let operator = match self.consume() {
-            Some(Token::ASSIGN('=')) => "=".to_string(),
-            Some(Token::LT('<')) => "<".to_string(),
-            Some(Token::GT('>')) => ">".to_string(),
-            Some(Token::BANG('!')) => {
-                if let Some(Token::ASSIGN('=')) = self.consume() {
-                    "!=".to_string()
+    pub fn parse_condition(&mut self) -> Result<Condition, String> {
+        self.parse_expression()
+    }
+    fn parse_expression(&mut self) -> Result<Condition, String> {
+        let mut left = self.parse_term()?;
+        while let Some(Token::Operator(op)) = self.peek() {
+            if op == &Operator::AND || op == &Operator::OR {
+                let op = if let Token::Operator(op) = self.consume().unwrap() {
+                    op.clone()
                 } else {
-                    return Err("Expected '=' after '!'".to_string());
-                }
+                    return Err("Expected AND or OR operator".to_string());
+                };
+                let right = self.parse_term()?;
+                left = Condition::Comparison {
+                    operator: op,
+                    left: Box::new(left),
+                    right: Box::new(right),
+                };
+            } else {
+                break;
             }
-            _ => return Err("Expected valid operator in condition".to_string()),
-        };
-
-        let value = self.parse_value()?;
-
-        Ok(Condition {
-            column,
-            operator,
-            value,
-        })
+        }
+        Ok(left)
     }
 
+    fn parse_term(&mut self) -> Result<Condition, String> {
+        if let Some(Token::LPAREN('(')) = self.peek() {
+            self.consume();
+            let expr = self.parse_expression()?;
+            self.expect(Token::RPAREN(')'))?;
+            return Ok(expr);
+        }
+        let left = match self.consume() {
+            Some(Token::IDENT(col)) => Condition::Column(col.iter().collect::<String>()),
+            Some(token) => {
+                return Err(format!("Unexpected token in condition: {:?}", token));
+            }
+            None => {
+                return Err("Expected column name or expression".to_string());
+            }
+        };
+        let op = match self.consume() {
+            Some(Token::Operator(op)) => op.clone(),
+            Some(token) => return Err(format!("Unexpected token in condition: {:?}", token)),
+            None => return Err("Expected operator".to_string()),
+        };
+
+        let right = match self.peek() {
+            Some(Token::IDENT(col)) => {
+                let col_name = col.iter().collect::<String>();
+                self.consume(); // consume IDENT
+                Condition::Column(col_name)
+            }
+            Some(Token::INT(_)) | Some(Token::SINGLEQUOTE(_)) => {
+                let value = self.parse_value()?; // consume happens *inside* parse_value
+                Condition::Value(value)
+            }
+            Some(token) => return Err(format!("Unexpected token in condition: {:?}", token)),
+            None => return Err("Expected column name or value in condition".to_string()),
+        };
+        Ok(Condition::Comparison {
+            operator: op,
+            left: Box::new(left),
+            right: Box::new(right),
+        })
+    }
     fn parse_value(&mut self) -> Result<ASTValue, String> {
-        match self.consume() {
+        match self.peek() {
             Some(Token::INT(val)) => {
                 let int_value = val
                     .iter()
                     .collect::<String>()
                     .parse::<i64>()
                     .map_err(|_| "Invalid integer value".to_string())?;
+                self.consume();
                 Ok(ASTValue::Int(int_value))
             }
-            Some(Token::IDENT(val)) => Ok(ASTValue::String(val.iter().collect())),
-            Some(Token::TRUE) => Ok(ASTValue::Boolean(true)),
-            Some(Token::FALSE) => Ok(ASTValue::Boolean(false)),
-            Some(Token::Helper(super::token::Helper::NULL)) => Ok(ASTValue::Null),
-            _ => Err("Expected a valid value in condition".to_string()),
+            Some(Token::SINGLEQUOTE(_)) => {
+                self.consume(); // Consume opening quote
+                if let Some(Token::IDENT(val)) = self.consume() {
+                    let str_value = val.iter().collect();
+                    self.expect(Token::SINGLEQUOTE('\''))?;
+                    Ok(ASTValue::String(str_value))
+                } else {
+                    Err("Expected string value".to_string())
+                }
+            }
+            _ => Err("Expected value".to_string()),
         }
     }
 }
@@ -178,6 +234,7 @@ impl Parser {
             None
         };
 
+        self.expect(Token::SEMICOLON(';'))?;
         Ok(ASTNode::Select {
             columns,
             table_name,
@@ -212,9 +269,14 @@ impl Parser {
                     values.push(ASTValue::Int(int_value));
                     self.consume();
                 }
-                Token::IDENT(val) => {
-                    values.push(ASTValue::String(val.iter().collect()));
-                    self.consume();
+                Token::SINGLEQUOTE(_) => {
+                    self.consume(); // Consume opening quote
+                    if let Some(Token::IDENT(val)) = self.consume() {
+                        values.push(ASTValue::String(val.iter().collect())); // Consume closing quote
+                    } else {
+                        return Err("Expected string value".to_string());
+                    }
+                    self.expect(Token::SINGLEQUOTE('\''))?;
                 }
                 Token::COMMA(',') => {
                     self.consume();
@@ -227,6 +289,7 @@ impl Parser {
             }
         }
 
+        self.expect(Token::SEMICOLON(';'))?;
         Ok(ASTNode::Insert { table_name, values })
     }
 }
@@ -241,14 +304,12 @@ impl Parser {
             return Err("Expected table name".to_string());
         };
 
-        self.expect(Token::Helper(super::token::Helper::SET))?;
+        self.expect(Token::Command(Command::SET))?;
 
         let mut assignments = Vec::new();
         while let Some(Token::IDENT(col)) = self.consume() {
             let column_name = col.iter().collect::<String>();
-            {
-                self.expect(Token::ASSIGN('='))?;
-            }
+            self.expect(Token::Operator(Operator::EQUALS))?;
             let value = self.parse_value()?;
             assignments.push(Assignment {
                 column: column_name,
@@ -267,6 +328,7 @@ impl Parser {
         } else {
             None
         };
+        self.expect(Token::SEMICOLON(';'))?;
 
         Ok(ASTNode::Update {
             table_name,
@@ -298,5 +360,19 @@ impl Parser {
             table_name,
             where_clause,
         })
+    }
+}
+
+impl Parser {
+    pub fn parse_use(&mut self) -> Result<ASTNode, String> {
+        self.expect(Token::Command(Command::USE))?;
+
+        let database_name = if let Some(Token::IDENT(name)) = self.consume() {
+            name.iter().collect::<String>()
+        } else {
+            return Err("Expected Database name".to_string());
+        };
+
+        Ok(ASTNode::USE { database_name })
     }
 }

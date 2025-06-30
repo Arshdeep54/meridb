@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(PartialEq, Debug)]
 pub enum Token {
     // Special types
@@ -9,14 +11,6 @@ pub enum Token {
     INT(Vec<char>),   // Integer literals
 
     // Operators and delimiters
-    ASSIGN(char),      // '='
-    PLUS(char),        // '+'
-    MINUS(char),       // '-'
-    BANG(char),        // '!'
-    ASTERISK(char),    // '*'
-    SLASH(char),       // '/'
-    LT(char),          // '<'
-    GT(char),          // '>'
     COMMA(char),       // ','
     SEMICOLON(char),   // ';'
     LPAREN(char),      // '('
@@ -34,6 +28,7 @@ pub enum Token {
     Command(Command),
     Helper(Helper),
     DataType(DataType),
+    Operator(Operator),
 }
 
 // Command keywords
@@ -55,9 +50,12 @@ pub enum Command {
     INTO,
     VALUES,
     TABLE,
+    TABLES,
     DATABASE,
+    DATABASES,
     USE,
     SHOW,
+    SET,
 }
 
 // Helper keywords
@@ -85,16 +83,14 @@ pub enum Helper {
     NOTNULLS,
     REFERENCESKEYS,
     ADDS,
-    SET,
     DEFAULT,
     AUTOINCREMENT,
 }
 
-// Data type keywords
 #[derive(PartialEq, Debug, Clone)]
 pub enum DataType {
     INTEGER,
-    VARCHAR,
+    FLOAT,
     TEXT,
     BOOLEAN,
     DATE,
@@ -103,10 +99,8 @@ pub enum DataType {
     DATETIME,
     CHAR,
     BLOB,
-    ENUM,
     JSON,
     DECIMAL,
-    FLOAT,
     DOUBLE,
     REAL,
     NUMERIC,
@@ -115,21 +109,41 @@ pub enum DataType {
     MEDIUMINT,
     BIGINT,
 }
+#[derive(PartialEq, Clone, Debug)]
+pub enum Operator {
+    EQUALS,   // '='
+    NE,       // '!=' or '<>'
+    LT,       // '<'
+    GT,       // '>'
+    LTorE,    // '<='
+    GTorE,    // '>='
+    PLUS,     // '+'
+    MINUS,    // '-'
+    DIVIDE,   // '/'
+    BANG,     // '!'
+    ASTERISK, // '*'
+    AND,      // 'AND'
+    OR,       // 'OR'
+}
 
-pub fn get_keyword_token(ident: &Vec<char>) -> Result<Token, String> {
+pub fn get_keyword_token(ident: &[char]) -> Result<Token, String> {
     let identifier: String = ident.iter().collect();
+    let lowercase_identifier = identifier.to_lowercase();
 
-    if let Ok(command) = match_command(&identifier) {
+    if let Ok(command) = match_command(&lowercase_identifier) {
         return Ok(Token::Command(command));
     }
-    if let Ok(helper) = match_helper(&identifier) {
+    if let Ok(helper) = match_helper(&lowercase_identifier) {
         return Ok(Token::Helper(helper));
     }
-    if let Ok(data_type) = match_data_type(&identifier) {
+    if let Ok(data_type) = match_data_type(&lowercase_identifier) {
         return Ok(Token::DataType(data_type));
     }
+    if let Ok(operator) = match_operator(&lowercase_identifier) {
+        return Ok(Token::Operator(operator));
+    }
 
-    match identifier.as_str() {
+    match lowercase_identifier.as_str() {
         "true" => Ok(Token::TRUE),
         "false" => Ok(Token::FALSE),
         _ => Err(String::from("Not a keyword")),
@@ -155,8 +169,11 @@ fn match_command(keyword: &str) -> Result<Command, String> {
         "values" => Ok(Command::VALUES),
         "table" => Ok(Command::TABLE),
         "database" => Ok(Command::DATABASE),
+        "tables" => Ok(Command::TABLES),
+        "databases" => Ok(Command::DATABASES),
         "use" => Ok(Command::USE),
         "show" => Ok(Command::SHOW),
+        "set" => Ok(Command::SET),
         _ => Err(String::from("Not a command")),
     }
 }
@@ -185,17 +202,16 @@ fn match_helper(keyword: &str) -> Result<Helper, String> {
         "notnulls" => Ok(Helper::NOTNULLS),
         "referenceskeys" => Ok(Helper::REFERENCESKEYS),
         "adds" => Ok(Helper::ADDS),
-        "set" => Ok(Helper::SET),
         "default" => Ok(Helper::DEFAULT),
-        "auto_increment" => Ok(Helper::AUTOINCREMENT),
+        "autoincrement" => Ok(Helper::AUTOINCREMENT),
         _ => Err(String::from("Not a helper")),
     }
 }
 
 fn match_data_type(keyword: &str) -> Result<DataType, String> {
-    match keyword {
+    match keyword.to_lowercase().as_str() {
         "integer" => Ok(DataType::INTEGER),
-        "varchar" => Ok(DataType::VARCHAR),
+        "float" => Ok(DataType::FLOAT),
         "text" => Ok(DataType::TEXT),
         "boolean" => Ok(DataType::BOOLEAN),
         "date" => Ok(DataType::DATE),
@@ -204,10 +220,8 @@ fn match_data_type(keyword: &str) -> Result<DataType, String> {
         "datetime" => Ok(DataType::DATETIME),
         "char" => Ok(DataType::CHAR),
         "blob" => Ok(DataType::BLOB),
-        "enum" => Ok(DataType::ENUM),
         "json" => Ok(DataType::JSON),
         "decimal" => Ok(DataType::DECIMAL),
-        "float" => Ok(DataType::FLOAT),
         "double" => Ok(DataType::DOUBLE),
         "real" => Ok(DataType::REAL),
         "numeric" => Ok(DataType::NUMERIC),
@@ -219,11 +233,26 @@ fn match_data_type(keyword: &str) -> Result<DataType, String> {
     }
 }
 
-use std::fmt;
-
+fn match_operator(op: &str) -> Result<Operator, String> {
+    match op.to_lowercase().as_str() {
+        "=" => Ok(Operator::EQUALS),
+        "!=" => Ok(Operator::NE),
+        "<" => Ok(Operator::LT),
+        ">" => Ok(Operator::GT),
+        "<=" => Ok(Operator::LTorE),
+        ">=" => Ok(Operator::GTorE),
+        "+" => Ok(Operator::PLUS),
+        "-" => Ok(Operator::MINUS),
+        "*" => Ok(Operator::ASTERISK),
+        "/" => Ok(Operator::DIVIDE),
+        "!" => Ok(Operator::BANG),
+        "and" => Ok(Operator::AND),
+        "or" => Ok(Operator::OR),
+        _ => Err(String::from("Not a valid operator")),
+    }
+}
 impl fmt::Display for Helper {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Customize this based on how you want `Helper` to be converted to a string
-        write!(f, "{:?}", self) // Example: Uses Debug representation
+        write!(f, "{:?}", self)
     }
 }

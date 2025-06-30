@@ -14,7 +14,7 @@ impl RawTerminal {
         Ok(RawTerminal { original_termios })
     }
 
-    pub fn into_raw_mode(&self) -> io::Result<()> {
+    pub fn raw_mode(&self) -> io::Result<()> {
         let mut raw = self.original_termios;
         raw.c_lflag &= !(ICANON | ECHO);
         tcsetattr(STDIN_FILENO, TCSANOW, &raw)?;
@@ -83,6 +83,7 @@ impl TerminalReader {
         }
     }
 
+    #[allow(dead_code)]
     pub fn stop(&self) {
         self.running.store(false, Ordering::SeqCst);
     }
@@ -93,6 +94,7 @@ pub fn clear_line() {
     io::stdout().flush().ok();
 }
 
+#[allow(dead_code)]
 pub fn move_cursor_to_start() {
     print!("\r");
     io::stdout().flush().ok();

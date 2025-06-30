@@ -1,6 +1,4 @@
-use std::string;
-
-use crate::parser::token;
+use crate::parsing::token;
 pub struct Lexer {
     input: Vec<char>,
     pub position: usize,
@@ -9,37 +7,46 @@ pub struct Lexer {
 }
 
 fn is_letter(ch: char) -> bool {
-    'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+    ch.is_ascii_lowercase() || ch.is_ascii_uppercase() || ch == '_'
 }
 
 fn is_digit(ch: char) -> bool {
-    '0' <= ch && ch <= '9'
+    ch.is_ascii_digit()
 }
 
 impl Lexer {
     pub fn new(input: Vec<char>) -> Self {
-        Self {
-            input: input,
+        let mut lexer = Self {
+            input,
             position: 0,
             read_position: 0,
-            ch: '0',
-        }
+            ch: '\0',
+        };
+        lexer.read_char();
+        lexer
     }
 
     pub fn read_char(&mut self) {
         if self.read_position >= self.input.len() {
-            self.ch = '0';
+            self.ch = '\0';
         } else {
             self.ch = self.input[self.read_position];
         }
         self.position = self.read_position;
-        self.read_position = self.read_position + 1;
+        self.read_position += 1;
     }
 
     pub fn skip_whitespace(&mut self) {
-        let ch = self.ch;
-        if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
+        while self.ch == ' ' || self.ch == '\t' || self.ch == '\n' || self.ch == '\r' {
             self.read_char();
+        }
+    }
+
+    pub fn peek_char(&self) -> char {
+        if self.read_position >= self.input.len() {
+            '\0'
+        } else {
+            self.input[self.read_position]
         }
     }
 
@@ -60,32 +67,44 @@ impl Lexer {
             l.input[position..l.position].to_vec()
         };
 
-        let tok: token::Token;
+        let mut tok: token::Token;
         self.skip_whitespace();
         match self.ch {
             '=' => {
-                tok = token::Token::ASSIGN(self.ch);
+                tok = token::Token::Operator(token::Operator::EQUALS);
             }
             '+' => {
-                tok = token::Token::PLUS(self.ch);
+                tok = token::Token::Operator(token::Operator::PLUS);
             }
             '-' => {
-                tok = token::Token::MINUS(self.ch);
+                tok = token::Token::Operator(token::Operator::MINUS);
             }
             '!' => {
-                tok = token::Token::BANG(self.ch);
+                tok = token::Token::Operator(token::Operator::BANG);
+                if self.peek_char() == '=' {
+                    self.read_char(); // consume '='
+                    tok = token::Token::Operator(token::Operator::NE);
+                }
             }
             '/' => {
-                tok = token::Token::SLASH(self.ch);
+                tok = token::Token::Operator(token::Operator::DIVIDE);
             }
             '*' => {
-                tok = token::Token::ASTERISK(self.ch);
+                tok = token::Token::Operator(token::Operator::ASTERISK);
             }
             '<' => {
-                tok = token::Token::LT(self.ch);
+                tok = token::Token::Operator(token::Operator::LT);
+                if self.peek_char() == '=' {
+                    self.read_char(); // consume '='
+                    tok = token::Token::Operator(token::Operator::LTorE);
+                }
             }
             '>' => {
-                tok = token::Token::GT(self.ch);
+                tok = token::Token::Operator(token::Operator::GT);
+                if self.peek_char() == '=' {
+                    self.read_char(); // consume '='
+                    tok = token::Token::Operator(token::Operator::GTorE);
+                }
             }
             ';' => {
                 tok = token::Token::SEMICOLON(self.ch);
@@ -111,7 +130,7 @@ impl Lexer {
             '\'' => {
                 tok = token::Token::SINGLEQUOTE(self.ch);
             }
-            '0' => {
+            '\0' => {
                 tok = token::Token::EOF;
             }
             _ => {
@@ -140,7 +159,6 @@ impl Lexer {
 
 pub fn get_tokens(input: &str) -> Vec<token::Token> {
     let mut l = Lexer::new(input.chars().collect());
-    l.read_char();
     let mut tokens: Vec<token::Token> = Vec::new();
     loop {
         let token = l.next_token();
