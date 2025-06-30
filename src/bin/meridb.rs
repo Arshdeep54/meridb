@@ -26,9 +26,9 @@ fn main() {
         InputHandler::with_history_file(history_file).expect("Failed to initialize input handler");
 
     while let Ok(line) = input_handler.readline("meridb> ") {
-            if line.eq_ignore_ascii_case("exit") {
-                break;
-            }
-            parse_command(&mut session, &line);
+        if line.eq_ignore_ascii_case("exit") {
+            break;
+        }
+        parse_command(&mut session, &line);
     }
 }
