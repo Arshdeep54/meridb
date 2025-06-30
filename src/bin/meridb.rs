@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use meridb::database::session::DatabaseSession;
 use meridb::input_handler::InputHandler;
-use meridb::parser::parse_command;
+use meridb::parsing::parse_command;
 
 #[derive(Parser)]
 struct Cli {
@@ -25,15 +25,10 @@ fn main() {
     let mut input_handler =
         InputHandler::with_history_file(history_file).expect("Failed to initialize input handler");
 
-    loop {
-        match input_handler.readline("meridb> ") {
-            Ok(line) => {
-                if line.eq_ignore_ascii_case("exit") {
-                    break;
-                }
-                parse_command(&mut session, &line);
+    while let Ok(line) = input_handler.readline("meridb> ") {
+            if line.eq_ignore_ascii_case("exit") {
+                break;
             }
-            Err(_) => break,
-        }
+            parse_command(&mut session, &line);
     }
 }

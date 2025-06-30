@@ -1,4 +1,4 @@
-use crate::parser::token;
+use crate::parsing::token;
 pub struct Lexer {
     input: Vec<char>,
     pub position: usize,
@@ -7,11 +7,11 @@ pub struct Lexer {
 }
 
 fn is_letter(ch: char) -> bool {
-    'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+    ch.is_ascii_lowercase() || ch.is_ascii_uppercase() || ch == '_'
 }
 
 fn is_digit(ch: char) -> bool {
-    '0' <= ch && ch <= '9'
+    ch.is_ascii_digit()
 }
 
 impl Lexer {

@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};
 
-use super::token::{DataType, Operator, Token};
+use super::token::{DataType, Operator};
 
 /// Abstract Syntax Tree Value
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -31,9 +31,9 @@ impl PartialOrd for ASTValue {
 
 #[derive(Debug)]
 pub struct ColumnDefinition {
-    pub Column_name: String,
-    pub Column_type: DataType,
-    pub Columns_Constraints: Vec<Vec<char>>,
+    pub column_name: String,
+    pub column_type: DataType,
+    pub columns_constraints: Vec<Vec<char>>,
 }
 #[derive(Debug, PartialEq)]
 pub enum Condition {
@@ -82,5 +82,5 @@ pub enum ASTNode {
     },
     USE {
         database_name: String,
-    }
+    },
 }

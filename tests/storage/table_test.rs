@@ -1,4 +1,4 @@
-use meridb::{parser::ast::ASTValue, storage::types::Column, DataType, Record, Table};
+use meridb::{parsing::ast::ASTValue, storage::types::Column, DataType, Record, Table};
 
 fn create_test_table() -> Table {
     let columns = vec![

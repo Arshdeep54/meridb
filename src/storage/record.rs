@@ -1,5 +1,5 @@
-use crate::parser::ast::{ASTValue, Condition};
-use crate::parser::token::Operator;
+use crate::parsing::ast::{ASTValue, Condition};
+use crate::parsing::token::Operator;
 use crate::DataType;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -54,14 +54,22 @@ impl Record {
     }
 
     fn is_valid_type(value: &ASTValue, expected_type: &DataType) -> bool {
-        match (value, expected_type) {
-            (ASTValue::Int(_), DataType::Integer) => true,
-            (ASTValue::Float(_), DataType::Float) => true,
-            (ASTValue::String(_), DataType::Text) => true,
-            (ASTValue::Boolean(_), DataType::Boolean) => true,
-            (ASTValue::Null, _) => true,
-            _ => false,
-        }
+        // match (value, expected_type) {
+        //     (ASTValue::Int(_), DataType::Integer) => true,
+        //     (ASTValue::Float(_), DataType::Float) => true,
+        //     (ASTValue::String(_), DataType::Text) => true,
+        //     (ASTValue::Boolean(_), DataType::Boolean) => true,
+        //     (ASTValue::Null, _) => true,
+        //     _ => false,
+        // }
+        matches!(
+            (value, expected_type),
+            (ASTValue::Int(_), DataType::Integer)
+                | (ASTValue::Float(_), DataType::Float)
+                | (ASTValue::String(_), DataType::Text)
+                | (ASTValue::Boolean(_), DataType::Boolean)
+                | (ASTValue::Null, _)
+        )
     }
 }
 
@@ -73,8 +81,8 @@ impl Record {
                 left,
                 right,
             } => match operator {
-                Operator::AND => self.evaluate_condition(&left) && self.evaluate_condition(&right),
-                Operator::OR => self.evaluate_condition(&left) || self.evaluate_condition(&right),
+                Operator::AND => self.evaluate_condition(left) && self.evaluate_condition(right),
+                Operator::OR => self.evaluate_condition(left) || self.evaluate_condition(right),
                 _ => {
                     let left = self.extract_condition_value(left);
                     let right = self.extract_condition_value(right);

@@ -6,7 +6,7 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::parser::ast::ASTNode;
+use crate::parsing::ast::ASTNode;
 use crate::storage::database::Database;
 use crate::{QueryExecutor, Table};
 
@@ -72,6 +72,7 @@ impl DatabaseSession {
             match OpenOptions::new()
                 .write(true)
                 .create(true)
+                .truncate(true)
                 .open(&table_file_path)
             {
                 Ok(mut file) => {
@@ -203,7 +204,7 @@ fn create_database_folder(db_name: &str) -> io::Result<()> {
         }
         Err(e) => {
             println!("Failed to create database '{}': {}", db_name, e);
-            return Err(e);
+            Err(e)
         }
     }
 }

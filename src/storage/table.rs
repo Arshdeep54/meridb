@@ -35,10 +35,10 @@ impl Table {
 
         for page_id in 0..self.next_page_id {
             if let Some(page) = self.pages.get_mut(&page_id) {
-                if !page.is_full(std::mem::size_of::<Record>()) {
-                    if page.insert_record(record.clone()).is_ok() {
-                        return Ok(record.id);
-                    }
+                if !page.is_full(std::mem::size_of::<Record>())
+                    && page.insert_record(record.clone()).is_ok()
+                {
+                    return Ok(record.id);
                 }
             }
         }
@@ -105,7 +105,7 @@ impl Table {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{parser::ast::ASTValue, types::DataType};
+    use crate::{parsing::ast::ASTValue, types::DataType};
 
     fn create_test_table() -> Table {
         let columns = vec![

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::parser::ast::ASTValue;
+use crate::parsing::ast::ASTValue;
 
 use super::record::Record;
 use std::collections::HashMap;

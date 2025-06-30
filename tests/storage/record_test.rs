@@ -1,7 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use meridb::{
-    parser::{
+    parsing::{
         ast::{ASTValue, Condition},
         token::Operator,
     },

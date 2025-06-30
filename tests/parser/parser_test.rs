@@ -1,6 +1,6 @@
-use meridb::parser::ast::{ASTNode, ASTValue, Assignment, Condition};
-use meridb::parser::parser::Parser;
-use meridb::parser::token::{Command, Operator, Token};
+use meridb::parsing::ast::{ASTNode, ASTValue, Condition};
+use meridb::parsing::parser::Parser;
+use meridb::parsing::token::{Command, Operator, Token};
 
 #[test]
 fn test_select_statement() {

@@ -1,5 +1,5 @@
-use meridb::parser::lexer::Lexer;
-use meridb::parser::token::{Command, DataType, Helper, Operator, Token};
+use meridb::parsing::lexer::Lexer;
+use meridb::parsing::token::{Command, DataType, Helper, Operator, Token};
 
 #[test]
 fn test_basic_tokens() {

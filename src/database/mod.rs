@@ -9,16 +9,14 @@ pub fn list_databases() -> Vec<String> {
 
     // Read the directory and collect .db files
     if let Ok(entries) = fs::read_dir("data/") {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                let path = entry.path();
-                if path.is_dir() {
-                    if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
-                        databases.push(name.to_string());
-                    }
+        entries.flatten().for_each(|entry| {
+            let path = entry.path();
+            if path.is_dir() {
+                if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
+                    databases.push(name.to_string());
                 }
             }
-        }
+        })
     }
 
     databases

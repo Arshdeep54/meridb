@@ -60,11 +60,11 @@ impl History {
                 self.current_index = Some(index - 1);
                 self.commands.get(index - 1)
             }
-            _ => self.commands.get(0),
+            _ => self.commands.front(),
         }
     }
 
-    pub fn next(&mut self) -> Option<&String> {
+    pub fn next_command(&mut self) -> Option<&String> {
         match self.current_index {
             Some(index) if index < self.commands.len() - 1 => {
                 self.current_index = Some(index + 1);

@@ -53,28 +53,28 @@ impl fmt::Display for DataType {
 }
 
 // Convert from token DataType to storage DataType
-impl From<crate::parser::token::DataType> for DataType {
-    fn from(token_type: crate::parser::token::DataType) -> Self {
+impl From<crate::parsing::token::DataType> for DataType {
+    fn from(token_type: crate::parsing::token::DataType) -> Self {
         match token_type {
-            crate::parser::token::DataType::INTEGER => DataType::Integer,
-            crate::parser::token::DataType::FLOAT => DataType::Float,
-            crate::parser::token::DataType::TEXT => DataType::Text,
-            crate::parser::token::DataType::BOOLEAN => DataType::Boolean,
-            crate::parser::token::DataType::DATE => DataType::Date,
-            crate::parser::token::DataType::TIME => DataType::Time,
-            crate::parser::token::DataType::TIMESTAMP => DataType::Timestamp,
-            crate::parser::token::DataType::DATETIME => DataType::DateTime,
-            crate::parser::token::DataType::CHAR => DataType::Char,
-            crate::parser::token::DataType::BLOB => DataType::Blob,
-            crate::parser::token::DataType::JSON => DataType::Json,
-            crate::parser::token::DataType::DECIMAL => DataType::Decimal,
-            crate::parser::token::DataType::DOUBLE => DataType::Double,
-            crate::parser::token::DataType::REAL => DataType::Real,
-            crate::parser::token::DataType::NUMERIC => DataType::Numeric,
-            crate::parser::token::DataType::TINYINT => DataType::TinyInt,
-            crate::parser::token::DataType::SMALLINT => DataType::SmallInt,
-            crate::parser::token::DataType::MEDIUMINT => DataType::MediumInt,
-            crate::parser::token::DataType::BIGINT => DataType::BigInt,
+            crate::parsing::token::DataType::INTEGER => DataType::Integer,
+            crate::parsing::token::DataType::FLOAT => DataType::Float,
+            crate::parsing::token::DataType::TEXT => DataType::Text,
+            crate::parsing::token::DataType::BOOLEAN => DataType::Boolean,
+            crate::parsing::token::DataType::DATE => DataType::Date,
+            crate::parsing::token::DataType::TIME => DataType::Time,
+            crate::parsing::token::DataType::TIMESTAMP => DataType::Timestamp,
+            crate::parsing::token::DataType::DATETIME => DataType::DateTime,
+            crate::parsing::token::DataType::CHAR => DataType::Char,
+            crate::parsing::token::DataType::BLOB => DataType::Blob,
+            crate::parsing::token::DataType::JSON => DataType::Json,
+            crate::parsing::token::DataType::DECIMAL => DataType::Decimal,
+            crate::parsing::token::DataType::DOUBLE => DataType::Double,
+            crate::parsing::token::DataType::REAL => DataType::Real,
+            crate::parsing::token::DataType::NUMERIC => DataType::Numeric,
+            crate::parsing::token::DataType::TINYINT => DataType::TinyInt,
+            crate::parsing::token::DataType::SMALLINT => DataType::SmallInt,
+            crate::parsing::token::DataType::MEDIUMINT => DataType::MediumInt,
+            crate::parsing::token::DataType::BIGINT => DataType::BigInt,
         }
     }
 }

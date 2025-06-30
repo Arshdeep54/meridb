@@ -1,5 +1,3 @@
-use std::iter;
-
 use super::{
     ast::{ASTNode, ASTValue, Assignment, ColumnDefinition, Condition},
     token::{Command, Operator, Token},
@@ -75,9 +73,9 @@ impl Parser {
                     }
 
                     columns.push(ColumnDefinition {
-                        Column_name: column_name,
-                        Column_type: column_type,
-                        Columns_Constraints: constraints,
+                        column_name,
+                        column_type,
+                        columns_constraints: constraints,
                     });
 
                     if let Some(Token::COMMA(',')) = self.peek() {
@@ -274,11 +272,11 @@ impl Parser {
                 Token::SINGLEQUOTE(_) => {
                     self.consume(); // Consume opening quote
                     if let Some(Token::IDENT(val)) = self.consume() {
-                        values.push(ASTValue::String(val.iter().collect()));
+                        values.push(ASTValue::String(val.iter().collect())); // Consume closing quote
                     } else {
                         return Err("Expected string value".to_string());
                     }
-                    self.expect(Token::SINGLEQUOTE('\'')); // Consume closing quote
+                    self.expect(Token::SINGLEQUOTE('\''))?;
                 }
                 Token::COMMA(',') => {
                     self.consume();
@@ -366,18 +364,15 @@ impl Parser {
 }
 
 impl Parser {
-    pub fn parse_use(&mut self)->Result<ASTNode, String>{
+    pub fn parse_use(&mut self) -> Result<ASTNode, String> {
         self.expect(Token::Command(Command::USE))?;
 
-        let database_name= if let Some(Token::IDENT(name)) = self.consume() {
+        let database_name = if let Some(Token::IDENT(name)) = self.consume() {
             name.iter().collect::<String>()
         } else {
             return Err("Expected Database name".to_string());
         };
 
-        Ok(ASTNode::USE{
-            database_name,
-        })
+        Ok(ASTNode::USE { database_name })
     }
-    
 }

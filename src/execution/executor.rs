@@ -1,6 +1,6 @@
 use super::result::{ExecutionResult, QueryResult, ResultSet};
 use crate::database::session::DatabaseSession;
-use crate::parser::ast::{ASTNode, ASTValue, Assignment, ColumnDefinition, Condition};
+use crate::parsing::ast::{ASTNode, ASTValue, Assignment, ColumnDefinition, Condition};
 use crate::storage::{record::Record, table::Table, types::Column};
 use crate::types::DataType;
 
@@ -34,12 +34,11 @@ impl QueryExecutor {
                 table_name,
                 columns,
             } => self.execute_create_table(table_name, columns),
-            ASTNode::CreateDatabase { database_name 
-            } => {
+            ASTNode::CreateDatabase { database_name } => {
                 self.session.create_database(&database_name);
                 Ok(QueryResult::Create)
-            },
-            ASTNode::USE { database_name } => { 
+            }
+            ASTNode::USE { database_name } => {
                 self.session.use_database(&database_name);
                 Ok(QueryResult::Use(database_name))
             }
@@ -198,9 +197,9 @@ impl QueryExecutor {
             .into_iter()
             .map(|def| {
                 Column::new(
-                    def.Column_name,
-                    DataType::from(def.Column_type),
-                    def.Columns_Constraints.contains(&vec!['N', 'U', 'L', 'L']),
+                    def.column_name,
+                    DataType::from(def.column_type),
+                    def.columns_constraints.contains(&vec!['N', 'U', 'L', 'L']),
                 )
             })
             .collect();

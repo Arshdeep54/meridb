@@ -27,6 +27,6 @@ mod tests {
         let column = Column::new("id".to_string(), DataType::Integer, false);
         assert_eq!(column.name, "id");
         assert_eq!(column.data_type, DataType::Integer);
-        assert_eq!(column.nullable, false);
+        assert!(!column.nullable);
     }
 }

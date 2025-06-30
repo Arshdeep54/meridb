@@ -126,7 +126,7 @@ pub enum Operator {
     OR,       // 'OR'
 }
 
-pub fn get_keyword_token(ident: &Vec<char>) -> Result<Token, String> {
+pub fn get_keyword_token(ident: &[char]) -> Result<Token, String> {
     let identifier: String = ident.iter().collect();
     let lowercase_identifier = identifier.to_lowercase();
 

@@ -1,4 +1,4 @@
-use meridb::{parser::ast::ASTValue, Page, Record};
+use meridb::{parsing::ast::ASTValue, Page, Record};
 
 fn create_test_record(id: u64) -> Record {
     let mut record = Record::new(id);

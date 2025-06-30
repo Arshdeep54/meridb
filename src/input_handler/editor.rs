@@ -2,7 +2,7 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 
 use super::history::History;
-use super::terminal::{clear_line, move_cursor_to_start, KeyEvent, RawTerminal, TerminalReader};
+use super::terminal::{clear_line, KeyEvent, RawTerminal, TerminalReader};
 
 pub struct Editor {
     history: History,
@@ -38,7 +38,7 @@ impl Editor {
     }
 
     pub fn readline(&mut self, prompt: &str) -> io::Result<String> {
-        self._raw_terminal.into_raw_mode()?;
+        self._raw_terminal.raw_mode()?;
         self.current_buffer.clear();
         self.cursor_position = 0;
 
@@ -71,7 +71,7 @@ impl Editor {
                     }
                 }
                 KeyEvent::ArrowDown => {
-                    match self.history.next() {
+                    match self.history.next_command() {
                         Some(next_cmd) => {
                             self.current_buffer = next_cmd.clone();
                             self.cursor_position = self.current_buffer.len();
