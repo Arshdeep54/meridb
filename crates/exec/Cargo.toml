@@ -1,0 +1,10 @@
+[package]
+name = "exec"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+types = { path = "../types" }
+sql = { path = "../sql" }
+catalog = { path = "../catalog" }
+storage = { path = "../storage" }

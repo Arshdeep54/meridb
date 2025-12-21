@@ -1,13 +1,13 @@
 use std::fs;
 use std::path::PathBuf;
 
-use meridb::database::session::DatabaseSession;
-use meridb::input_handler::InputHandler;
-use meridb::parsing::parse_command;
+use sql::parse_command;
+
+use crate::input_handler::InputHandler;
+
+pub mod input_handler;
 
 fn main() {
-    let mut session = DatabaseSession::new();
-
     let data_dir = PathBuf::from("data");
     if !data_dir.exists() {
         fs::create_dir(&data_dir).expect("Failed to create data directory");
@@ -21,6 +21,9 @@ fn main() {
         if line.eq_ignore_ascii_case("exit") {
             break;
         }
-        parse_command(&mut session, &line);
+        match parse_command(&line) {
+            Ok(ast) => println!("{:#?}", ast),
+            Err(e) => eprintln!("Parse error: {}", e),
+        }
     }
 }
