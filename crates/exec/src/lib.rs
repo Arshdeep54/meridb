@@ -1,14 +1,10 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+pub mod executor;
+pub mod result;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+use crate::result::ExecutionResult;
+use catalog::Catalog;
+use sql::ast::ASTNode;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub trait Executor {
+    fn execute(&mut self, cat: &mut dyn Catalog, ast: ASTNode) -> ExecutionResult;
 }

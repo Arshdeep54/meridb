@@ -5,4 +5,5 @@ edition = "2024"
 
 [dependencies]
 types = { path = "../types" }
+sql = {path= "../sql"}
 serde = { version = "1.0", features = ["derive"] }

@@ -1,8 +1,7 @@
-use crate::parsing::ast::{ASTValue, Condition};
-use crate::parsing::token::Operator;
-use crate::DataType;
 use serde::{Deserialize, Serialize};
+use sql::ast::{ASTValue, Condition};
 use std::collections::HashMap;
+use types::tokens::{DataType, Operator};
 
 use super::types::Column;
 
@@ -64,10 +63,10 @@ impl Record {
         // }
         matches!(
             (value, expected_type),
-            (ASTValue::Int(_), DataType::Integer)
-                | (ASTValue::Float(_), DataType::Float)
-                | (ASTValue::String(_), DataType::Text)
-                | (ASTValue::Boolean(_), DataType::Boolean)
+            (ASTValue::Int(_), DataType::INTEGER)
+                | (ASTValue::Float(_), DataType::FLOAT)
+                | (ASTValue::String(_), DataType::TEXT)
+                | (ASTValue::Boolean(_), DataType::BOOLEAN)
                 | (ASTValue::Null, _)
         )
     }
@@ -158,9 +157,9 @@ mod tests {
         record.set_value("name", ASTValue::String("John".to_string()));
 
         let columns = vec![
-            Column::new("id".to_string(), DataType::Integer, false),
-            Column::new("name".to_string(), DataType::Text, false),
-            Column::new("age".to_string(), DataType::Integer, true),
+            Column::new("id".to_string(), DataType::INTEGER, false),
+            Column::new("name".to_string(), DataType::TEXT, false),
+            Column::new("age".to_string(), DataType::INTEGER, true),
         ];
 
         assert!(record.validate(&columns).is_ok());

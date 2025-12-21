@@ -1,5 +1,6 @@
-use crate::storage::record::Record;
 use std::fmt;
+
+use storage::Record;
 
 #[derive(Debug)]
 pub struct ResultSet {

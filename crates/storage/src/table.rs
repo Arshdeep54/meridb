@@ -34,12 +34,11 @@ impl Table {
         self.next_record_id += 1;
 
         for page_id in 0..self.next_page_id {
-            if let Some(page) = self.pages.get_mut(&page_id) {
-                if !page.is_full(std::mem::size_of::<Record>())
-                    && page.insert_record(record.clone()).is_ok()
-                {
-                    return Ok(record.id);
-                }
+            if let Some(page) = self.pages.get_mut(&page_id)
+                && !page.is_full(std::mem::size_of::<Record>())
+                && page.insert_record(record.clone()).is_ok()
+            {
+                return Ok(record.id);
             }
         }
 
@@ -104,14 +103,16 @@ impl Table {
 
 #[cfg(test)]
 mod tests {
+    use sql::ast::ASTValue;
+    use types::tokens::DataType;
+
     use super::*;
-    use crate::{parsing::ast::ASTValue, types::DataType};
 
     fn create_test_table() -> Table {
         let columns = vec![
-            Column::new("id".to_string(), DataType::Integer, false),
-            Column::new("name".to_string(), DataType::Text, false),
-            Column::new("age".to_string(), DataType::Integer, true),
+            Column::new("id".to_string(), DataType::INTEGER, false),
+            Column::new("name".to_string(), DataType::TEXT, false),
+            Column::new("age".to_string(), DataType::INTEGER, true),
         ];
         Table::new("test_table".to_string(), columns)
     }

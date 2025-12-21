@@ -262,6 +262,7 @@ name = "storage"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "sql",
  "types",
 ]
 

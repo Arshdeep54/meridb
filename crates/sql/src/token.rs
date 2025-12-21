@@ -1,53 +1,5 @@
 use types::tokens::{Command, DataType, Helper, Operator, Token};
 
-#[derive(Debug, Clone)]
-pub enum TokenKind {
-    Illegal,
-    Eof,
-    Ident,
-    Int,
-    Comma,
-    Semicolon,
-    LParen,
-    RParen,
-    LBrace,
-    RBrace,
-    Quote,
-    SingleQuote,
-    True,
-    False,
-    Command(Command),
-    Operator(Operator),
-    DataType(DataType),
-    Helper(Helper),
-}
-
-impl From<&Token> for TokenKind {
-    fn from(t: &super::token::Token) -> Self {
-        use super::token::Token::*;
-        match t {
-            ILLEGAL => TokenKind::Illegal,
-            EOF => TokenKind::Eof,
-            IDENT(_) => TokenKind::Ident,
-            INT(_) => TokenKind::Int,
-            COMMA(_) => TokenKind::Comma,
-            SEMICOLON(_) => TokenKind::Semicolon,
-            LPAREN(_) => TokenKind::LParen,
-            RPAREN(_) => TokenKind::RParen,
-            LBRACE(_) => TokenKind::LBrace,
-            RBRACE(_) => TokenKind::RBrace,
-            QUOTE(_) => TokenKind::Quote,
-            SINGLEQUOTE(_) => TokenKind::SingleQuote,
-            TRUE => TokenKind::True,
-            FALSE => TokenKind::False,
-            Command(c) => TokenKind::Command(c.clone()),
-            Operator(op) => TokenKind::Operator(op.clone()),
-            DataType(dt) => TokenKind::DataType(dt.clone()),
-            Helper(h) => TokenKind::Helper(h.clone()),
-        }
-    }
-}
-
 pub fn get_keyword_token(ident: &[char]) -> Result<Token, String> {
     let identifier: String = ident.iter().collect();
     let lowercase_identifier = identifier.to_lowercase();

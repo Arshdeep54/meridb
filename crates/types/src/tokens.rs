@@ -1,5 +1,7 @@
 use std::fmt;
 
+use serde::{Deserialize, Serialize};
+
 #[derive(PartialEq, Debug, Clone)]
 pub enum Token {
     // Special types
@@ -87,7 +89,7 @@ pub enum Helper {
     AUTOINCREMENT,
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub enum DataType {
     INTEGER,
     FLOAT,

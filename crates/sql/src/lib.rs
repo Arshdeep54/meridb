@@ -18,7 +18,7 @@ pub fn parse_command(command: &str) -> Result<ASTNode> {
     println!("Tokens: {:?}", tokens);
     let mut parser = Parser::new(tokens);
 
-    let ast = match parser.peek() {
+    match parser.peek() {
         Some(Token::Command(Command::CREATE)) => {
             if let Some(Token::Command(Command::TABLE)) = parser.tokens.get(1) {
                 parser.parse_create_table()
@@ -35,6 +35,5 @@ pub fn parse_command(command: &str) -> Result<ASTNode> {
         Some(Token::Command(Command::USE)) => parser.parse_use(),
         Some(Token::Command(Command::SHOW)) => parser.parse_show(),
         _ => Err(SqlError::UnsupportedCommand),
-    };
-    ast
+    }
 }

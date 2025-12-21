@@ -1,5 +1,5 @@
-use crate::types::DataType;
 use serde::{Deserialize, Serialize};
+use types::tokens::DataType;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Column {
@@ -20,13 +20,15 @@ impl Column {
 
 #[cfg(test)]
 mod tests {
+    use types::tokens::DataType;
+
     use super::*;
 
     #[test]
     fn test_column_creation() {
-        let column = Column::new("id".to_string(), DataType::Integer, false);
+        let column = Column::new("id".to_string(), DataType::INTEGER, false);
         assert_eq!(column.name, "id");
-        assert_eq!(column.data_type, DataType::Integer);
+        assert_eq!(column.data_type, DataType::INTEGER);
         assert!(!column.nullable);
     }
 }
