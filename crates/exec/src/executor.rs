@@ -38,7 +38,8 @@ impl Executor for QueryExecutor {
                 columns,
             } => QueryExecutor::execute_create_table(cat, table_name, columns),
             ASTNode::CreateDatabase { database_name } => {
-                cat.create_database(&database_name)?;
+                cat.create_database(&database_name)
+                    .map_err(|e| e.to_string())?;
                 Ok(QueryResult::Create)
             }
             ASTNode::USE { database_name } => {
@@ -107,7 +108,8 @@ impl QueryExecutor {
             })
             .collect();
         let table = Table::new(table_name.clone(), cols);
-        cat.create_table(table_name, table)?;
+        cat.create_table(table_name, table)
+            .map_err(|e| e.to_string())?;
         Ok(QueryResult::Create)
     }
 

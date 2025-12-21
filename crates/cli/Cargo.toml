@@ -7,3 +7,4 @@ edition = "2024"
 libc = "0.2.178"
 termios = "0.3.3"
 sql = { path = "../sql" }
+api = {path = "../api" }

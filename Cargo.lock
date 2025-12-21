@@ -17,6 +17,7 @@ version = "0.1.0"
 dependencies = [
  "catalog",
  "exec",
+ "sql",
  "types",
 ]
 
@@ -36,6 +37,9 @@ checksum = "5dd9dc738b7a8311c7ade152424974d8115f2cdad61e8dab8dac9f2362298510"
 name = "catalog"
 version = "0.1.0"
 dependencies = [
+ "crc32fast",
+ "serde",
+ "snafu",
  "storage",
  "types",
 ]
@@ -73,6 +77,7 @@ dependencies = [
 name = "cli"
 version = "0.1.0"
 dependencies = [
+ "api",
  "libc",
  "sql",
  "termios",
@@ -83,6 +88,15 @@ name = "core-foundation-sys"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
+
+[[package]]
+name = "crc32fast"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9481c1c90cbf2ac953f07c8d4a58aa3945c425b7185c9154d67a65e4230da511"
+dependencies = [
+ "cfg-if",
+]
 
 [[package]]
 name = "exec"

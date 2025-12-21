@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-snafu = "0.8.9"
 types = { path = "../types" }
-serde = { version = "1.0", features = ["derive"] }
+serde={workspace=true}
+snafu={workspace=true}

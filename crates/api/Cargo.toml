@@ -7,3 +7,4 @@ edition = "2024"
 types = { path = "../types" }
 exec = { path = "../exec" }
 catalog = { path = "../catalog" }
+sql = { path = "../sql" }
