@@ -1,5 +1,8 @@
 use std::{
-    collections::HashMap, fs, path::PathBuf, time::{SystemTime, UNIX_EPOCH}
+    collections::HashMap,
+    fs,
+    path::PathBuf,
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use storage::Table;
@@ -8,7 +11,7 @@ use crate::{
     Catalog,
     dir_ops::{atomic_write_file, create_db_dirs},
     error::{CatalogError, Result},
-    meta_codec::encode_meta,
+    meta_codec::{decode_meta, encode_meta},
 };
 
 pub struct FileCatalog {
@@ -68,12 +71,31 @@ impl Catalog for FileCatalog {
         unimplemented!()
     }
 
-    fn list_databases(&self) -> Result<Vec<String>, String> {
+    fn list_databases(&self) -> Result<Vec<String>> {
+        if !self.root_dir.exists() {
+            return Err(crate::error::CatalogError::RootMissing {
+                path: self.root_dir.clone(),
+            });
+        }
+
+        if !self.root_dir.is_dir() {
+            return Err(crate::error::CatalogError::RootNotDir {
+                path: self.root_dir.clone(),
+            });
+        }
+
         let mut out = Vec::new();
 
-        let rd = fs::read_dir(&self.root_dir).map_err(|e| e.to_string())?;
+        let rd = fs::read_dir(&self.root_dir).map_err(|source| CatalogError::ReadDir {
+            path: self.root_dir.clone(),
+            source,
+        })?;
+
         for entry in rd {
-            let entry = entry.map_err(|e| e.to_string())?;
+            let entry = entry.map_err(|source| CatalogError::ReadDir {
+                path: self.root_dir.clone(),
+                source,
+            })?;
             let path = entry.path();
             if !path.is_dir() {
                 continue;
@@ -83,24 +105,97 @@ impl Catalog for FileCatalog {
                 continue;
             }
 
-            let bytes = fs::read(&meta_path).map_err(|e| e.to_string())?;
+            let bytes = fs::read(&meta_path).map_err(|source| CatalogError::ReadFile {
+                path: meta_path.clone(),
+                source,
+            })?;
             match crate::meta_codec::decode_meta(&bytes) {
                 Ok(decoded) => out.push(decoded.name),
-                Err(_) => {
-                    continue;
+                Err(source) => {
+                    return Err(CatalogError::InvalidMetadata {
+                        path: meta_path,
+                        source: Box::new(source),
+                    });
                 }
             }
         }
         out.sort();
         Ok(out)
     }
-    fn list_tables(&self) -> Result<Vec<String>, String> {
-        unimplemented!()
+
+    fn use_database(&mut self, name: &str) -> Result<()> {
+        let db_dir = self.root_dir.join(name);
+        if !db_dir.exists() {
+            return Err(CatalogError::DatabaseDirMissing { path: db_dir });
+        }
+        if !db_dir.is_dir() {
+            return Err(CatalogError::DatabaseDirNotDir { path: db_dir });
+        }
+        let meta_path = db_dir.join("metadata.mdb");
+        if !meta_path.exists() || !meta_path.is_file() {
+            return Err(CatalogError::MetadataMissing { path: meta_path });
+        }
+
+        let bytes = fs::read(&meta_path).map_err(|source| CatalogError::ReadFile {
+            path: meta_path.clone(),
+            source,
+        })?;
+        decode_meta(&bytes).map_err(|source| CatalogError::InvalidMetadata {
+            path: meta_path,
+            source: Box::new(source),
+        })?;
+
+        self.current_db = Some(name.to_string());
+        self.tables.clear();
+        Ok(())
     }
+
+    fn list_tables(&self) -> Result<Vec<String>> {
+        let db = match &self.current_db {
+            Some(db) => db,
+            None => return Err(CatalogError::NoCurrentDatabase),
+        };
+
+        let tables_dir = self.root_dir.join(db).join("tables");
+        if !tables_dir.exists() {
+            return Err(CatalogError::TablesDirMissing { path: tables_dir });
+        }
+
+        if !tables_dir.is_dir() {
+            return Err(CatalogError::TablesDirNotDir { path: tables_dir });
+        }
+
+        let mut out = Vec::new();
+        let rd = fs::read_dir(&tables_dir).map_err(|source| CatalogError::ReadDir {
+            path: tables_dir.clone(),
+            source,
+        })?;
+
+        for entry_res in rd {
+            let entry = match entry_res {
+                Ok(e) => e,
+                Err(source) => {
+                    // Skip unreadable entries (or map to error if you prefer to fail fast)
+                    return Err(CatalogError::ReadDir {
+                        path: tables_dir.clone(),
+                        source,
+                    });
+                }
+            };
+            let path = entry.path();
+            if path.is_dir()
+                && let Some(name_os) = path.file_name()
+                && let Some(name) = name_os.to_str()
+            {
+                out.push(name.to_string());
+            }
+        }
+
+        out.sort();
+        Ok(out)
+    }
+
     fn save_table(&mut self, _table_name: &str) -> Result<(), String> {
-        unimplemented!()
-    }
-    fn use_database(&mut self, _name: &str) -> bool {
         unimplemented!()
     }
 }

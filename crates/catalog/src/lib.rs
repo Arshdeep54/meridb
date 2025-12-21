@@ -9,13 +9,13 @@ pub mod file_catalog;
 pub mod meta_codec;
 
 pub trait Catalog {
-    fn use_database(&mut self, name: &str) -> bool;
+    fn use_database(&mut self, name: &str) -> Result<()>;
     fn create_database(&mut self, name: &str) -> Result<()>;
     fn create_table(&mut self, name: String, table: Table) -> Result<()>;
     fn get_table(&self, name: &str) -> Option<&Table>;
     fn get_table_mut(&mut self, name: &str) -> Option<&mut Table>;
-    fn list_databases(&self) -> Result<Vec<String>, String>;
-    fn list_tables(&self) -> Result<Vec<String>, String>;
+    fn list_databases(&self) -> Result<Vec<String>>;
+    fn list_tables(&self) -> Result<Vec<String>>;
     fn save_table(&mut self, table_name: &str) -> Result<(), String>;
 }
 
@@ -26,9 +26,9 @@ pub struct InMemoryCatalog {
 }
 
 impl Catalog for InMemoryCatalog {
-    fn use_database(&mut self, name: &str) -> bool {
+    fn use_database(&mut self, name: &str) -> Result<()> {
         self.current_db = Some(name.to_string());
-        true
+        Ok(())
     }
     fn create_database(&mut self, _name: &str) -> Result<()> {
         Ok(())
@@ -49,10 +49,10 @@ impl Catalog for InMemoryCatalog {
     fn get_table_mut(&mut self, name: &str) -> Option<&mut Table> {
         self.tables.get_mut(name)
     }
-    fn list_databases(&self) -> Result<Vec<String>, String> {
+    fn list_databases(&self) -> Result<Vec<String>> {
         unimplemented!()
     }
-    fn list_tables(&self) -> Result<Vec<String>, String> {
+    fn list_tables(&self) -> Result<Vec<String>> {
         unimplemented!()
     }
     fn save_table(&mut self, _table_name: &str) -> Result<(), String> {

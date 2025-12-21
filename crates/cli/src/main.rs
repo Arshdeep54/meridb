@@ -24,7 +24,7 @@ fn main() {
         }
         match parse_command(&line) {
             Ok(ast) => match session.execute(ast) {
-                Ok(qr) => println!("{}",qr),
+                Ok(qr) => println!("{}", qr),
                 Err(e) => eprintln!("Exec error: {e}"),
             },
             Err(e) => eprintln!("Parse error: {}", e),

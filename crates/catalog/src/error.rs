@@ -1,5 +1,5 @@
 use snafu::Snafu;
-use std::path::PathBuf;
+use std::{error::Error, path::PathBuf};
 
 pub type Result<T, E = CatalogError> = std::result::Result<T, E>;
 
@@ -65,4 +65,46 @@ pub enum CatalogError {
 
     #[snafu(display("Metadata checksum mismatch: expected {expected}, got {got}"))]
     ChecksumMismatch { expected: u32, got: u32 },
+
+    #[snafu(display("Data root not found: {path:?}"))]
+    RootMissing { path: PathBuf },
+
+    #[snafu(display("Data root is not a directory: {path:?}"))]
+    RootNotDir { path: PathBuf },
+
+    #[snafu(display("Failed to read directory {path:?}: {source}"))]
+    ReadDir {
+        path: PathBuf,
+        source: std::io::Error,
+    },
+
+    #[snafu(display("Failed to read file {path:?}: {source}"))]
+    ReadFile {
+        path: PathBuf,
+        source: std::io::Error,
+    },
+
+    #[snafu(display("Invalid database metadata at {path:?}: {source}"))]
+    InvalidMetadata {
+        path: PathBuf,
+        source: Box<dyn Error + Send + Sync>,
+    },
+
+    #[snafu(display("No database selected; use USE <db> first"))]
+    NoCurrentDatabase,
+
+    #[snafu(display("Tables directory missing: {path:?}"))]
+    TablesDirMissing { path: PathBuf },
+
+    #[snafu(display("Tables directory is not a directory: {path:?}"))]
+    TablesDirNotDir { path: PathBuf },
+
+    #[snafu(display("Database directory missing: {path:?}"))]
+    DatabaseDirMissing { path: PathBuf },
+
+    #[snafu(display("Database directory is not a directory: {path:?}"))]
+    DatabaseDirNotDir { path: PathBuf },
+
+    #[snafu(display("Database metadata file missing: {path:?}"))]
+    MetadataMissing { path: PathBuf },
 }

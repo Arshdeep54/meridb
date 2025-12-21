@@ -43,7 +43,7 @@ impl Executor for QueryExecutor {
                 Ok(QueryResult::Create)
             }
             ASTNode::USE { database_name } => {
-                cat.use_database(&database_name);
+                let _ = cat.use_database(&database_name);
                 Ok(QueryResult::Use(database_name))
             }
             ASTNode::Show { show_type } => QueryExecutor::execute_show(cat, show_type),
@@ -57,11 +57,11 @@ impl QueryExecutor {
             ShowType::DATABASES => {
                 let list = cat.list_databases().map_err(|e| e.to_string())?;
                 Ok(QueryResult::Info(list))
-            },
+            }
             ShowType::TABLES => {
                 let list = cat.list_tables().map_err(|e| e.to_string())?;
                 Ok(QueryResult::Info(list))
-            },
+            }
         }
     }
     fn execute_select(
