@@ -13,9 +13,7 @@ use crate::ast::ASTNode;
 
 pub fn parse_command(command: &str) -> Result<ASTNode> {
     let trimmed_command = command.trim();
-    println!("Command: {}", trimmed_command);
     let tokens = lexer::get_tokens(trimmed_command);
-    println!("Tokens: {:?}", tokens);
     let mut parser = Parser::new(tokens);
 
     match parser.peek() {

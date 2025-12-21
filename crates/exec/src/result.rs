@@ -30,6 +30,7 @@ pub enum QueryResult {
     Create,      // Table created successfully
     Drop,        // Table dropped successfully
     Use(String),
+    Info(Vec<String>),
 }
 
 impl fmt::Display for QueryResult {
@@ -42,9 +43,10 @@ impl fmt::Display for QueryResult {
             QueryResult::Insert(count) => write!(f, "{} row(s) inserted", count),
             QueryResult::Update(count) => write!(f, "{} row(s) updated", count),
             QueryResult::Delete(count) => write!(f, "{} row(s) deleted", count),
-            QueryResult::Create => write!(f, "Table created successfully"),
-            QueryResult::Drop => write!(f, "Table dropped successfully"),
+            QueryResult::Create => write!(f, "Created successfully"),
+            QueryResult::Drop => write!(f, "Dropped successfully"),
             QueryResult::Use(database_name) => write!(f, "Using {}", database_name),
+            QueryResult::Info(list) => write!(f, "{}", list.join("\n")),
         }
     }
 }

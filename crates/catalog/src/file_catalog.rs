@@ -1,7 +1,5 @@
 use std::{
-    collections::HashMap,
-    path::PathBuf,
-    time::{SystemTime, UNIX_EPOCH},
+    collections::HashMap, fs, path::PathBuf, time::{SystemTime, UNIX_EPOCH}
 };
 
 use storage::Table;
@@ -69,8 +67,32 @@ impl Catalog for FileCatalog {
     fn get_table_mut(&mut self, _name: &str) -> Option<&mut Table> {
         unimplemented!()
     }
+
     fn list_databases(&self) -> Result<Vec<String>, String> {
-        unimplemented!()
+        let mut out = Vec::new();
+
+        let rd = fs::read_dir(&self.root_dir).map_err(|e| e.to_string())?;
+        for entry in rd {
+            let entry = entry.map_err(|e| e.to_string())?;
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            let meta_path = path.join("metadata.mdb");
+            if !meta_path.is_file() {
+                continue;
+            }
+
+            let bytes = fs::read(&meta_path).map_err(|e| e.to_string())?;
+            match crate::meta_codec::decode_meta(&bytes) {
+                Ok(decoded) => out.push(decoded.name),
+                Err(_) => {
+                    continue;
+                }
+            }
+        }
+        out.sort();
+        Ok(out)
     }
     fn list_tables(&self) -> Result<Vec<String>, String> {
         unimplemented!()

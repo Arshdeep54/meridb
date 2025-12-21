@@ -52,8 +52,17 @@ impl Executor for QueryExecutor {
 }
 
 impl QueryExecutor {
-    fn execute_show(_cat: &mut dyn Catalog, _show_type: ShowType) -> ExecutionResult {
-        unimplemented!()
+    fn execute_show(cat: &mut dyn Catalog, show_type: ShowType) -> ExecutionResult {
+        match show_type {
+            ShowType::DATABASES => {
+                let list = cat.list_databases().map_err(|e| e.to_string())?;
+                Ok(QueryResult::Info(list))
+            },
+            ShowType::TABLES => {
+                let list = cat.list_tables().map_err(|e| e.to_string())?;
+                Ok(QueryResult::Info(list))
+            },
+        }
     }
     fn execute_select(
         _cat: &mut dyn Catalog,
