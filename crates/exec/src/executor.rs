@@ -65,12 +65,42 @@ impl QueryExecutor {
         }
     }
     fn execute_select(
-        _cat: &mut dyn Catalog,
-        _columns: Vec<String>,
-        _table_name: String,
-        _where_clause: Option<Condition>,
+        cat: &mut dyn Catalog,
+        columns: Vec<String>,
+        table_name: String,
+        where_clause: Option<Condition>,
     ) -> ExecutionResult {
-        unimplemented!()
+        let table = match cat.get_table(&table_name) {
+            Some(t) => t,
+            None => return Err(format!("Table '{}' not found", table_name)),
+        };
+
+        for c in &columns {
+            if !table.columns.iter().any(|col| &col.name == c) {
+                return Err(format!("Unknown column '{}' in table '{}'", c, table_name));
+            }
+        }
+
+        let mut rs = super::result::ResultSet::new(columns.clone());
+
+        for rec in table.scan() {
+            if let Some(cond) = &where_clause {
+                if !rec.evaluate_condition(cond) {
+                    continue;
+                }
+            }
+
+            let mut out = Record::new(0);
+            for c in &columns {
+                match rec.get_value(c) {
+                    Some(v) => out.set_value(c, v.clone()),
+                    None => return Err(format!("Column '{}' missing in record", c)),
+                }
+            }
+            rs.add_record(out);
+        }
+
+        Ok(QueryResult::Select(rs))
     }
 
     fn execute_insert(

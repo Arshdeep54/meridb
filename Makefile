@@ -50,3 +50,8 @@ test: ## Run all tests
 .PHONY: clean
 clean: ## Remove target directory
 	cargo clean
+
+.PHONY: install
+install: ## Install meridb
+	cargo install --path crates/cli
+
