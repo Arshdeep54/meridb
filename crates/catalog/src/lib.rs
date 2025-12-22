@@ -1,5 +1,5 @@
 use std::{collections::HashMap, path::PathBuf};
-use storage::table::Table;
+use storage::{page::PAGE_SIZE, table::Table};
 
 use crate::error::{CatalogError, Result};
 
@@ -18,6 +18,7 @@ pub trait Catalog {
     fn list_databases(&self) -> Result<Vec<String>>;
     fn list_tables(&self) -> Result<Vec<String>>;
     fn save_table(&mut self, table_name: &str) -> Result<()>;
+    fn seq_scan_pages(&self, table_name: &str) -> Result<Vec<[u8; PAGE_SIZE]>>;
 }
 
 #[derive(Default)]
@@ -57,6 +58,9 @@ impl Catalog for InMemoryCatalog {
         unimplemented!()
     }
     fn save_table(&mut self, _table_name: &str) -> Result<()> {
+        unimplemented!()
+    }
+    fn seq_scan_pages(&self, _table_name: &str) -> Result<Vec<[u8; PAGE_SIZE]>> {
         unimplemented!()
     }
 }

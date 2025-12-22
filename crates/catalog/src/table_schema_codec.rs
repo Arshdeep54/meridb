@@ -82,3 +82,114 @@ fn data_type_to_code(dt: &DataType) -> u16 {
         DataType::BIGINT => 19,
     }
 }
+
+fn data_type_from_code(code: u16) -> Result<DataType, String> {
+    match code {
+        1 => Ok(DataType::INTEGER),
+        2 => Ok(DataType::FLOAT),
+        3 => Ok(DataType::TEXT),
+        4 => Ok(DataType::BOOLEAN),
+        5 => Ok(DataType::DATE),
+        6 => Ok(DataType::TIME),
+        7 => Ok(DataType::TIMESTAMP),
+        8 => Ok(DataType::DATETIME),
+        9 => Ok(DataType::CHAR),
+        10 => Ok(DataType::BLOB),
+        11 => Ok(DataType::JSON),
+        12 => Ok(DataType::DECIMAL),
+        13 => Ok(DataType::DOUBLE),
+        14 => Ok(DataType::REAL),
+        15 => Ok(DataType::NUMERIC),
+        16 => Ok(DataType::TINYINT),
+        17 => Ok(DataType::SMALLINT),
+        18 => Ok(DataType::MEDIUMINT),
+        19 => Ok(DataType::BIGINT),
+        _ => Err(format!("unknown data type code {}", code)),
+    }
+}
+
+pub fn decode_schema(bytes: &[u8]) -> Result<(String, Vec<Column>), crate::error::CatalogError> {
+    use crate::error::CatalogError;
+
+    if bytes.len() < 4 + 4 + 2 + 2 + 4 + 4 {
+        return Err(CatalogError::MetaTooShort {
+            min: 20,
+            actual: bytes.len(),
+        });
+    }
+
+    let (magic, rest) = bytes.split_at(4);
+    if magic != MAGIC {
+        return Err(CatalogError::BadMagic);
+    }
+
+    let (ver_b, rest) = rest.split_at(4);
+    let version = u32::from_le_bytes(ver_b.try_into().unwrap());
+    if version != VERSION {
+        return Err(CatalogError::BadVersion { version });
+    }
+
+    let (tname_len_b, rest) = rest.split_at(2);
+    let tname_len = u16::from_le_bytes(tname_len_b.try_into().unwrap()) as usize;
+
+    if rest.len() < tname_len + 2 {
+        return Err(CatalogError::Truncated);
+    }
+
+    let (tname_b, rest) = rest.split_at(tname_len);
+    let table_name = std::str::from_utf8(tname_b)
+        .map_err(|_| CatalogError::BadUtf8)?
+        .to_string();
+
+    let (col_cnt_b, mut rest) = rest.split_at(2);
+    let col_cnt = u16::from_le_bytes(col_cnt_b.try_into().unwrap()) as usize;
+
+    let mut columns = Vec::with_capacity(col_cnt);
+    for _ in 0..col_cnt {
+        if rest.len() < 2 {
+            return Err(CatalogError::Truncated);
+        }
+        let (name_len_b, r1) = rest.split_at(2);
+        let name_len = u16::from_le_bytes(name_len_b.try_into().unwrap()) as usize;
+        if r1.len() < name_len + 2 + 1 + 1 {
+            return Err(CatalogError::Truncated);
+        }
+        let (name_b, r2) = r1.split_at(name_len);
+        let (code_b, r3) = r2.split_at(2);
+        let (nullable_b, r4) = r3.split_at(1);
+        let (_reserved_b, r5) = r4.split_at(1);
+
+        let name = std::str::from_utf8(name_b)
+            .map_err(|_| CatalogError::BadUtf8)?
+            .to_string();
+        let code = u16::from_le_bytes(code_b.try_into().unwrap());
+        let dt = data_type_from_code(code).map_err(|e| CatalogError::WriteFile {
+            path: std::path::PathBuf::from("schema.tbl"),
+            source: std::io::Error::new(std::io::ErrorKind::Other, e),
+        })?;
+        let nullable = nullable_b[0] != 0;
+
+        columns.push(Column::new(name, dt, nullable));
+        rest = r5;
+    }
+
+    if rest.len() < 4 + 4 {
+        return Err(CatalogError::Truncated);
+    }
+    let (flags_b, rest) = rest.split_at(4);
+    let _flags = u32::from_le_bytes(flags_b.try_into().unwrap());
+
+    let (checksum_b, _tail) = rest.split_at(4);
+    let checksum = u32::from_le_bytes(checksum_b.try_into().unwrap());
+    let mut hasher = Hasher::new();
+    hasher.update(&bytes[..bytes.len() - 4]);
+    let expect = hasher.finalize();
+    if expect != checksum {
+        return Err(CatalogError::ChecksumMismatch {
+            expected: expect,
+            got: checksum,
+        });
+    }
+
+    Ok((table_name, columns))
+}

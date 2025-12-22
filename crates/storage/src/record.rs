@@ -179,6 +179,74 @@ pub fn serialize_record_for_page(record: &Record, columns: &[Column]) -> Result<
     Ok(out)
 }
 
+pub fn deserialize_record_for_page(payload: &[u8], columns: &[Column]) -> Result<Record, String> {
+    let n = columns.len();
+    let bitmap_bytes = (n + 7) / 8;
+    if payload.len() < bitmap_bytes {
+        return Err("payload too short for null bitmap".into());
+    }
+
+    let (bitmap, mut p) = payload.split_at(bitmap_bytes);
+
+    let mut rec = Record::new(0);
+    for (i, col) in columns.iter().enumerate() {
+        let byte = i / 8;
+        let bit = i % 8;
+        let is_null = (bitmap[byte] & (1 << bit)) != 0;
+        if is_null {
+            rec.set_value(&col.name, ASTValue::Null);
+            continue;
+        }
+        match col.data_type {
+            DataType::INTEGER => {
+                if p.len() < std::mem::size_of::<i64>() {
+                    return Err("payload truncated (INTEGER)".into());
+                }
+                let (b, r) = p.split_at(8);
+                let v = i64::from_le_bytes(b.try_into().unwrap());
+                rec.set_value(&col.name, ASTValue::Int(v));
+                p = r;
+            }
+            DataType::FLOAT => {
+                if p.len() < std::mem::size_of::<f64>() {
+                    return Err("payload truncated (FLOAT)".into());
+                }
+                let (b, r) = p.split_at(8);
+                let v = f64::from_le_bytes(b.try_into().unwrap());
+                rec.set_value(&col.name, ASTValue::Float(v));
+                p = r;
+            }
+            DataType::BOOLEAN => {
+                if p.is_empty() {
+                    return Err("payload truncated (BOOLEAN)".into());
+                }
+                let (b, r) = p.split_at(1);
+                rec.set_value(&col.name, ASTValue::Boolean(b[0] != 0));
+                p = r;
+            }
+            DataType::TEXT | DataType::CHAR | DataType::BLOB | DataType::JSON => {
+                if p.len() < 4 {
+                    return Err("payload truncated (len32)".into());
+                }
+                let (lb, r1) = p.split_at(4);
+                let len = u32::from_le_bytes(lb.try_into().unwrap()) as usize;
+                if r1.len() < len {
+                    return Err("payload truncated (varlen bytes)".into());
+                }
+                let (vb, r2) = r1.split_at(len);
+                let s = String::from_utf8(vb.to_vec())
+                    .map_err(|_| "invalid utf-8 in TEXT/CHAR/JSON".to_string())?;
+                rec.set_value(&col.name, ASTValue::String(s));
+                p = r2;
+            }
+            _ => {
+                return Err(format!("deserialize unsupported type {:?}", col.data_type));
+            }
+        }
+    }
+    Ok(rec)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

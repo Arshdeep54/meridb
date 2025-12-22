@@ -179,6 +179,44 @@ impl Page {
     }
 }
 
+#[derive(Clone, Copy)]
+struct ReadHeader {
+    record_count: u16,
+}
+
+pub fn iter_slots(buf: &[u8]) -> Result<impl Iterator<Item = (u16, u16, u8)> + '_, String> {
+    let hdr = read_header(buf)?;
+    let rc = hdr.record_count as usize;
+    let slot_dir_start = PAGE_SIZE
+        .checked_sub(rc * SLOT_LEN)
+        .ok_or("slot calc overflow")?;
+    if buf.len() < PAGE_SIZE {
+        return Err("page buffer too small".into());
+    }
+    if slot_dir_start < HEADER_LEN {
+        return Err("corrupt page (slot_dir overlaps header)".into());
+    }
+
+    Ok((0..rc).map(move |i| {
+        let off = slot_dir_start + i * SLOT_LEN;
+        let o = u16::from_le_bytes(buf[off..off + 2].try_into().unwrap());
+        let l = u16::from_le_bytes(buf[off + 2..off + 4].try_into().unwrap());
+        let flags = buf[off + 4];
+        (o, l, flags)
+    }))
+}
+
+fn read_header(buf: &[u8]) -> Result<ReadHeader, String> {
+    if buf.len() < HEADER_LEN {
+        return Err("page too small".into());
+    }
+    if &buf[0..4] != b"HPG0" {
+        return Err("bad page magic".into());
+    }
+    let rc = u16::from_le_bytes(buf[12..14].try_into().unwrap());
+    Ok(ReadHeader { record_count: rc })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

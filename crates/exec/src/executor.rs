@@ -1,9 +1,11 @@
 use catalog::Catalog;
 use sql::ast::{ASTNode, ASTValue, Assignment, ColumnDefinition, Condition, ShowType};
-use storage::{Record, Table, types::Column};
+use storage::{
+    Record, Table, page::iter_slots, record::deserialize_record_for_page, types::Column,
+};
 
 use super::result::{ExecutionResult, QueryResult};
-use crate::Executor;
+use crate::{Executor, result::ResultSet};
 
 pub struct QueryExecutor;
 
@@ -75,13 +77,56 @@ impl QueryExecutor {
             None => return Err(format!("Table '{}' not found", table_name)),
         };
 
+        if table.scan().next().is_none() {
+            let mut rs = ResultSet::new(columns.clone());
+
+            let pages = cat.seq_scan_pages(&table_name).map_err(|e| e.to_string())?;
+
+            for page in pages {
+                let slots = iter_slots(&page).map_err(|e| e.to_string())?;
+                for (off, len, flags) in slots {
+                    if flags != 0 {
+                        continue;
+                    }
+                    let start = off as usize;
+                    let end = start + len as usize;
+                    if end > page.len() {
+                        // Corrupted page or bad slot; skip defensively
+                        continue;
+                    }
+
+                    let payload = &page[start..end];
+                    let rec = deserialize_record_for_page(payload, &table.columns)?;
+
+                    // WHERE filtering
+                    if let Some(cond) = &where_clause {
+                        if !rec.evaluate_condition(cond) {
+                            continue;
+                        }
+                    }
+
+                    // Projection
+                    let mut out = Record::new(0);
+                    for c in &columns {
+                        match rec.get_value(c) {
+                            Some(v) => out.set_value(c, v.clone()),
+                            None => return Err(format!("Column '{}' missing in record", c)),
+                        }
+                    }
+                    rs.add_record(out);
+                }
+            }
+
+            return Ok(QueryResult::Select(rs));
+        }
+
         for c in &columns {
             if !table.columns.iter().any(|col| &col.name == c) {
                 return Err(format!("Unknown column '{}' in table '{}'", c, table_name));
             }
         }
 
-        let mut rs = super::result::ResultSet::new(columns.clone());
+        let mut rs = ResultSet::new(columns.clone());
 
         for rec in table.scan() {
             if let Some(cond) = &where_clause {

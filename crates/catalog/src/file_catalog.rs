@@ -1,19 +1,23 @@
 use std::{
     collections::HashMap,
     fs::{self, OpenOptions},
-    io::{Seek, SeekFrom, Write},
+    io::{Read, Seek, SeekFrom, Write},
     path::PathBuf,
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use storage::Table;
+use storage::{
+    Table,
+    page::{PAGE_SIZE, iter_slots},
+    record::deserialize_record_for_page,
+};
 
 use crate::{
     Catalog,
     dir_ops::{atomic_write_file, create_db_dirs},
     error::{CatalogError, Result},
     meta_codec::{decode_meta, encode_meta},
-    table_schema_codec::encode_schema,
+    table_schema_codec::{decode_schema, encode_schema},
 };
 
 pub struct FileCatalog {
@@ -189,6 +193,73 @@ impl Catalog for FileCatalog {
 
         self.current_db = Some(name.to_string());
         self.tables.clear();
+
+        // Load table schemas from data/<db>/tables/<table>/schema.tbl
+        let tables_dir = self.root_dir.join(name).join("tables");
+        if tables_dir.exists() && tables_dir.is_dir() {
+            let rd = fs::read_dir(&tables_dir).map_err(|source| CatalogError::ReadDir {
+                path: tables_dir.clone(),
+                source,
+            })?;
+            for entry in rd {
+                let entry = entry.map_err(|source| CatalogError::ReadDir {
+                    path: tables_dir.clone(),
+                    source,
+                })?;
+                let path = entry.path();
+                if !path.is_dir() {
+                    continue;
+                }
+                let schema_path = path.join("schema.tbl");
+                if !schema_path.is_file() {
+                    continue;
+                }
+                let bytes = fs::read(&schema_path).map_err(|source| CatalogError::ReadFile {
+                    path: schema_path.clone(),
+                    source,
+                })?;
+
+                let (_tname, cols) = decode_schema(&bytes)?;
+                let tname = path
+                    .file_name()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("")
+                    .to_string();
+                let table = storage::Table::new(tname.clone(), cols);
+                self.tables.insert(tname.clone(), table);
+                let pages = self.seq_scan_pages(&tname)?;
+                if let Some(tbl) = self.tables.get_mut(&tname.clone()) {
+                    for page in pages {
+                        let slots =
+                            iter_slots(&page).map_err(|e| CatalogError::InvalidMetadata {
+                                path: path.clone(),
+                                source: Box::new(std::io::Error::new(std::io::ErrorKind::Other, e)),
+                            })?;
+                        for (off, len, flags) in slots {
+                            if flags != 0 {
+                                continue;
+                            }
+                            let start = off as usize;
+                            let end = start + len as usize;
+                            if end > page.len() {
+                                continue;
+                            }
+                            let payload = &page[start..end];
+                            let rec = deserialize_record_for_page(payload, &tbl.columns).map_err(
+                                |e| CatalogError::InvalidMetadata {
+                                    path: path.clone(),
+                                    source: Box::new(std::io::Error::new(
+                                        std::io::ErrorKind::Other,
+                                        e,
+                                    )),
+                                },
+                            )?;
+                            let _ = tbl.insert_record(rec);
+                        }
+                    }
+                }
+            }
+        }
         Ok(())
     }
 
@@ -328,6 +399,45 @@ impl Catalog for FileCatalog {
         })?;
 
         Ok(())
+    }
+
+    fn seq_scan_pages(&self, table_name: &str) -> Result<Vec<[u8; storage::page::PAGE_SIZE]>> {
+        let db = self
+            .current_db
+            .as_ref()
+            .ok_or(CatalogError::NoCurrentDatabase)?;
+        let seg_path = self
+            .root_dir
+            .join(db)
+            .join("tables")
+            .join(table_name)
+            .join("data")
+            .join("heap.0001");
+        if !seg_path.exists() {
+            return Ok(Vec::new());
+        }
+        let mut f = OpenOptions::new()
+            .read(true)
+            .open(&seg_path)
+            .map_err(|source| CatalogError::OpenFile {
+                path: seg_path.clone(),
+                source,
+            })?;
+        let mut pages = Vec::new();
+        loop {
+            let mut buf = [0u8; PAGE_SIZE];
+            match f.read_exact(&mut buf) {
+                Ok(_) => pages.push(buf),
+                Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => break,
+                Err(source) => {
+                    return Err(CatalogError::ReadFile {
+                        path: seg_path.clone(),
+                        source,
+                    });
+                }
+            }
+        }
+        Ok(pages)
     }
 }
 
