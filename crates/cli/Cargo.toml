@@ -13,3 +13,8 @@ api = {path = "../api" }
 
 libc.workspace=true
 termios.workspace=true
+clap.workspace = true
+
+[[bin]]
+name = "meridb"
+path = "src/main.rs"
