@@ -107,4 +107,7 @@ pub enum CatalogError {
 
     #[snafu(display("Database metadata file missing: {path:?}"))]
     MetadataMissing { path: PathBuf },
+
+    #[snafu(display("Table does not exist: {name}"))]
+    TableDoesNotExist { name: String },
 }

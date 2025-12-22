@@ -74,11 +74,60 @@ impl QueryExecutor {
     }
 
     fn execute_insert(
-        _cat: &mut dyn Catalog,
-        _table_name: String,
-        _values: Vec<ASTValue>,
+        cat: &mut dyn Catalog,
+        table_name: String,
+        values: Vec<ASTValue>,
     ) -> ExecutionResult {
-        unimplemented!()
+        let table = match cat.get_table_mut(&table_name) {
+            Some(t) => t,
+            None => return Err(format!("Table '{}' not found", table_name)),
+        };
+
+        if values.len() != table.columns.len() {
+            return Err(format!(
+                "Column count mismatch. Expected {}, got {}",
+                table.columns.len(),
+                values.len()
+            ));
+        }
+
+        let mut record = Record::new(0);
+        for (col, val) in table.columns.iter().zip(values.into_iter()) {
+            if !col.nullable && matches!(val, ASTValue::Null) {
+                return Err(format!("NOT NULL violation for column '{}'", col.name));
+            }
+
+            let ok = matches!(
+                (&val, &col.data_type),
+                (ASTValue::Null, _)
+                    | (ASTValue::Int(_), types::tokens::DataType::INTEGER)
+                    | (ASTValue::Float(_), types::tokens::DataType::FLOAT)
+                    | (ASTValue::Boolean(_), types::tokens::DataType::BOOLEAN)
+                    | (ASTValue::String(_), types::tokens::DataType::TEXT)
+                    | (ASTValue::String(_), types::tokens::DataType::CHAR)
+                    | (ASTValue::String(_), types::tokens::DataType::BLOB)
+                    | (ASTValue::String(_), types::tokens::DataType::JSON)
+            );
+            if !ok {
+                return Err(format!("Type mismatch for column '{}'", col.name));
+            }
+
+            record.set_value(&col.name, val);
+        }
+
+        if let Err(e) = record.validate(&table.columns) {
+            return Err(format!("Record validation failed: {}", e));
+        }
+
+        match table.insert_record(record) {
+            Ok(_) => {
+                if let Err(e) = cat.save_table(&table_name) {
+                    return Err(format!("Failed to persist table '{}': {}", table_name, e));
+                }
+                Ok(QueryResult::Insert(1))
+            }
+            Err(e) => Err(e),
+        }
     }
 
     fn execute_update(

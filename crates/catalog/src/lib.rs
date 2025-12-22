@@ -17,7 +17,7 @@ pub trait Catalog {
     fn get_table_mut(&mut self, name: &str) -> Option<&mut Table>;
     fn list_databases(&self) -> Result<Vec<String>>;
     fn list_tables(&self) -> Result<Vec<String>>;
-    fn save_table(&mut self, table_name: &str) -> Result<(), String>;
+    fn save_table(&mut self, table_name: &str) -> Result<()>;
 }
 
 #[derive(Default)]
@@ -56,7 +56,7 @@ impl Catalog for InMemoryCatalog {
     fn list_tables(&self) -> Result<Vec<String>> {
         unimplemented!()
     }
-    fn save_table(&mut self, _table_name: &str) -> Result<(), String> {
+    fn save_table(&mut self, _table_name: &str) -> Result<()> {
         unimplemented!()
     }
 }

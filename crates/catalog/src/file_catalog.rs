@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
-    fs,
+    fs::{self, OpenOptions},
+    io::{Seek, SeekFrom, Write},
     path::PathBuf,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -224,11 +225,12 @@ impl Catalog for FileCatalog {
                 }
             };
             let path = entry.path();
-            if path.is_dir()
-                && let Some(name_os) = path.file_name()
-                && let Some(name) = name_os.to_str()
-            {
-                out.push(name.to_string());
+            if path.is_dir() {
+                if let Some(name_os) = path.file_name() {
+                    if let Some(name) = name_os.to_str() {
+                        out.push(name.to_string());
+                    }
+                }
             }
         }
 
@@ -236,8 +238,96 @@ impl Catalog for FileCatalog {
         Ok(out)
     }
 
-    fn save_table(&mut self, _table_name: &str) -> Result<(), String> {
-        unimplemented!()
+    fn save_table(&mut self, table_name: &str) -> Result<()> {
+        let db = match &self.current_db {
+            Some(db) => db,
+            None => return Err(CatalogError::NoCurrentDatabase),
+        };
+
+        let table = match self.tables.get(table_name) {
+            Some(t) => t,
+            None => {
+                return Err(CatalogError::TableDoesNotExist {
+                    name: table_name.to_string(),
+                });
+            }
+        };
+
+        let tables_dir = self.root_dir.join(db).join("tables");
+        if !tables_dir.exists() {
+            fs::create_dir_all(&tables_dir).map_err(|source| CatalogError::CreateDir {
+                path: tables_dir.clone(),
+                source,
+            })?;
+        }
+
+        let table_dir = tables_dir.join(table_name);
+        if !table_dir.exists() {
+            fs::create_dir_all(&table_dir).map_err(|source| CatalogError::CreateDir {
+                path: table_dir.clone(),
+                source,
+            })?;
+        }
+        let data_dir = table_dir.join("data");
+        if !data_dir.exists() {
+            fs::create_dir_all(&data_dir).map_err(|source| CatalogError::CreateDir {
+                path: data_dir.clone(),
+                source,
+            })?;
+        }
+
+        let seg_path = data_dir.join("heap.0001");
+        let mut seg = OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .read(true)
+            .write(true)
+            .open(&seg_path)
+            .map_err(|source| CatalogError::OpenFile {
+                path: seg_path.clone(),
+                source,
+            })?;
+
+        for (page_id, page) in table.pages() {
+            let bytes = page
+                .to_bytes(table.columns())
+                .map_err(|e| CatalogError::WriteFile {
+                    path: seg_path.clone(),
+                    source: std::io::Error::other(e),
+                })?;
+
+            let offset = (*page_id as u64) * (storage::page::PAGE_SIZE as u64);
+            seg.seek(SeekFrom::Start(offset))
+                .map_err(|source| CatalogError::WriteFile {
+                    path: seg_path.clone(),
+                    source,
+                })?;
+            seg.write_all(&bytes)
+                .map_err(|source| CatalogError::WriteFile {
+                    path: seg_path.clone(),
+                    source,
+                })?;
+        }
+
+        seg.sync_all().map_err(|source| CatalogError::SyncFile {
+            path: seg_path.clone(),
+            source,
+        })?;
+        drop(seg);
+
+        let dir_f = OpenOptions::new()
+            .read(true)
+            .open(&data_dir)
+            .map_err(|source| CatalogError::OpenFile {
+                path: data_dir.clone(),
+                source,
+            })?;
+        dir_f.sync_all().map_err(|source| CatalogError::SyncFile {
+            path: data_dir.clone(),
+            source,
+        })?;
+
+        Ok(())
     }
 }
 

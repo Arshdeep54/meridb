@@ -125,6 +125,60 @@ impl Record {
     }
 }
 
+// Serialize a Record to a compact row payload suitable for heap page storage.
+pub fn serialize_record_for_page(record: &Record, columns: &[Column]) -> Result<Vec<u8>, String> {
+    let n = columns.len();
+    let bitmap_bytes = n.div_ceil(8);
+    let mut out = Vec::with_capacity(16 * n + bitmap_bytes);
+
+    // Null bitmap (bit i = 1 means NULL)
+    let mut bitmap = vec![0u8; bitmap_bytes];
+    for (i, col) in columns.iter().enumerate() {
+        let is_null = matches!(record.data.get(&col.name), Some(ASTValue::Null) | None);
+        if is_null {
+            let byte = i / 8;
+            let bit = i % 8;
+            bitmap[byte] |= 1 << bit;
+        }
+    }
+    out.extend_from_slice(&bitmap);
+
+    for col in columns {
+        let val = record.data.get(&col.name).unwrap_or(&ASTValue::Null);
+        match (val, &col.data_type) {
+            (ASTValue::Null, _) => {
+                // No bytes for NULL (presence indicated by bitmap)
+            }
+            (ASTValue::Int(i), DataType::INTEGER) => {
+                out.extend_from_slice(&(*i).to_le_bytes());
+            }
+            (ASTValue::Float(f), DataType::FLOAT) => {
+                out.extend_from_slice(&(*f).to_le_bytes());
+            }
+            (ASTValue::Boolean(b), DataType::BOOLEAN) => {
+                out.push(if *b { 1 } else { 0 });
+            }
+            (ASTValue::String(s), DataType::TEXT)
+            | (ASTValue::String(s), DataType::CHAR)
+            | (ASTValue::String(s), DataType::BLOB)
+            | (ASTValue::String(s), DataType::JSON) => {
+                let bytes = s.as_bytes();
+                let len = u32::try_from(bytes.len()).map_err(|_| "string too long")?;
+                out.extend_from_slice(&len.to_le_bytes());
+                out.extend_from_slice(bytes);
+            }
+            _ => {
+                return Err(format!(
+                    "type mismatch for column '{}' (value: {:?}, expected: {:?})",
+                    col.name, val, col.data_type
+                ));
+            }
+        }
+    }
+
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

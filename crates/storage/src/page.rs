@@ -1,10 +1,14 @@
 use serde::{Deserialize, Serialize};
 use sql::ast::ASTValue;
 
+use crate::{record::serialize_record_for_page, types::Column};
+
 use super::record::Record;
 use std::collections::HashMap;
 
-const PAGE_SIZE: usize = 4096; // 4KB page size
+pub const PAGE_SIZE: usize = 8192; // 8KB page size
+pub const HEADER_LEN: usize = 18; // see PageHeader::write_into
+pub const SLOT_LEN: usize = 5; // off u16 + len u16 + flags u8
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Page {
@@ -65,6 +69,113 @@ impl Page {
 
     pub fn is_full(&self, required_space: usize) -> bool {
         self.free_space < required_space
+    }
+}
+
+struct PageHeader {
+    magic: [u8; 4],      // b"HPG0"
+    version: u32,        // 1
+    page_id: u32,        // your in-memory page id
+    record_count: u16,   // number of slots
+    free_space_off: u16, // offset where free space starts
+    flags: u16,          // reserved
+}
+
+impl PageHeader {
+    fn new(page_id: u32) -> Self {
+        Self {
+            magic: *b"HPG0",
+            version: 1,
+            page_id,
+            record_count: 0,
+            free_space_off: 0,
+            flags: 0,
+        }
+    }
+
+    fn write_into(&self, buf: &mut [u8]) {
+        // layout: magic[4] | version u32 | page_id u32 | record_count u16 | free_space_off u16 | flags u16
+        buf[0..4].copy_from_slice(&self.magic);
+        buf[4..8].copy_from_slice(&self.version.to_le_bytes());
+        buf[8..12].copy_from_slice(&self.page_id.to_le_bytes());
+        buf[12..14].copy_from_slice(&self.record_count.to_le_bytes());
+        buf[14..16].copy_from_slice(&self.free_space_off.to_le_bytes());
+        buf[16..18].copy_from_slice(&self.flags.to_le_bytes());
+    }
+}
+
+// Slot directory entry (end of page, growing downward)
+#[derive(Debug, Clone, Copy)]
+struct Slot {
+    off: u16,
+    len: u16,
+    flags: u8, // 0 = visible, 1 = tombstone (reserved)
+}
+
+impl Slot {
+    fn write_into(&self, buf: &mut [u8]) {
+        buf[0..2].copy_from_slice(&self.off.to_le_bytes());
+        buf[2..4].copy_from_slice(&self.len.to_le_bytes());
+        buf[4] = self.flags;
+    }
+}
+
+impl Page {
+    // Serialize the current in-memory page (records) into a fixed 8 KiB page with a heap layout.
+    // Pack records sequentially into the payload and write a slot directory at the end.
+    // Assumes self.records are already sized to fit (your free_space tracking should guarantee).
+    pub fn to_bytes(&self, columns: &[Column]) -> Result<[u8; PAGE_SIZE], String> {
+        let mut page = [0u8; PAGE_SIZE];
+
+        let mut hdr = PageHeader::new(self.id);
+
+        let mut ids: Vec<u64> = self.records.keys().copied().collect();
+        ids.sort_unstable();
+
+        let mut payload_off = HEADER_LEN;
+        let mut slot_dir_end = PAGE_SIZE;
+        let mut slots_written = 0usize;
+
+        for rid in ids {
+            let rec = self.records.get(&rid).expect("record disappeared");
+
+            let payload = serialize_record_for_page(rec, columns)
+                .map_err(|e| format!("serialize record {} failed: {}", rid, e))?;
+            let plen = payload.len();
+
+            let need = plen + SLOT_LEN;
+            if payload_off + need > slot_dir_end {
+                return Err(format!(
+                    "page {} overflow while writing record {}; need {}, have {}",
+                    self.id,
+                    rid,
+                    need,
+                    slot_dir_end.saturating_sub(payload_off)
+                ));
+            }
+
+            let start = payload_off;
+            let end = start + plen;
+            page[start..end].copy_from_slice(&payload);
+            payload_off = end;
+
+            slot_dir_end -= SLOT_LEN;
+            let slot = Slot {
+                off: start as u16,
+                len: plen as u16,
+                flags: 0,
+            };
+            slot.write_into(&mut page[slot_dir_end..slot_dir_end + SLOT_LEN]);
+
+            slots_written += 1;
+        }
+
+        hdr.record_count = u16::try_from(slots_written).unwrap_or(u16::MAX);
+        hdr.free_space_off = payload_off as u16;
+
+        hdr.write_into(&mut page[0..HEADER_LEN]);
+
+        Ok(page)
     }
 }
 
