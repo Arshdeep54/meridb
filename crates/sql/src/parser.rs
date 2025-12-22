@@ -493,7 +493,7 @@ impl Parser {
         self.expect(Token::Command(Command::SHOW))?;
 
         let show_ast = match self.consume() {
-            Some(Token::Command(Command::TABLE)) => ASTNode::Show {
+            Some(Token::Command(Command::TABLES)) => ASTNode::Show {
                 show_type: ShowType::TABLES,
             },
             Some(Token::Command(Command::DATABASES)) => ASTNode::Show {

@@ -7,6 +7,7 @@ pub mod dir_ops;
 pub mod error;
 pub mod file_catalog;
 pub mod meta_codec;
+pub mod table_schema_codec;
 
 pub trait Catalog {
     fn use_database(&mut self, name: &str) -> Result<()>;

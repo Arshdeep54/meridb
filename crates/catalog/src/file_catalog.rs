@@ -12,6 +12,7 @@ use crate::{
     dir_ops::{atomic_write_file, create_db_dirs},
     error::{CatalogError, Result},
     meta_codec::{decode_meta, encode_meta},
+    table_schema_codec::encode_schema,
 };
 
 pub struct FileCatalog {
@@ -61,14 +62,54 @@ impl Catalog for FileCatalog {
         Ok(())
     }
 
-    fn create_table(&mut self, _name: String, _table: Table) -> Result<()> {
-        unimplemented!()
+    fn create_table(&mut self, name: String, table: Table) -> Result<()> {
+        let db = match &self.current_db {
+            Some(db) => db,
+            None => return Err(CatalogError::NoCurrentDatabase),
+        };
+
+        if !is_valid_ident(&name) {
+            return Err(CatalogError::InvalidName { name });
+        }
+
+        let tables_dir = self.root_dir.join(db).join("tables");
+        if !tables_dir.exists() {
+            fs::create_dir_all(&tables_dir).map_err(|source| CatalogError::CreateDir {
+                path: tables_dir.clone(),
+                source,
+            })?;
+        } else if !tables_dir.is_dir() {
+            return Err(CatalogError::TablesDirNotDir { path: tables_dir });
+        }
+
+        let table_dir = tables_dir.join(&name);
+        if table_dir.exists() {
+            return Err(CatalogError::AlreadyExists {
+                name,
+                path: table_dir,
+            });
+        }
+        fs::create_dir_all(&table_dir).map_err(|source| CatalogError::CreateDir {
+            path: table_dir.clone(),
+            source,
+        })?;
+
+        let schema_bytes = encode_schema(&table.name, &table.columns);
+        let tmp = table_dir.join("schema.tmp");
+        let final_schema = table_dir.join("schema.tbl");
+        atomic_write_file(&tmp, &final_schema, &schema_bytes)?;
+
+        self.tables.insert(table.name.clone(), table);
+
+        Ok(())
     }
-    fn get_table(&self, _name: &str) -> Option<&Table> {
-        unimplemented!()
+
+    fn get_table(&self, name: &str) -> Option<&Table> {
+        self.tables.get(name)
     }
-    fn get_table_mut(&mut self, _name: &str) -> Option<&mut Table> {
-        unimplemented!()
+
+    fn get_table_mut(&mut self, name: &str) -> Option<&mut Table> {
+        self.tables.get_mut(name)
     }
 
     fn list_databases(&self) -> Result<Vec<String>> {
@@ -198,4 +239,22 @@ impl Catalog for FileCatalog {
     fn save_table(&mut self, _table_name: &str) -> Result<(), String> {
         unimplemented!()
     }
+}
+
+// Simple identifier validation: [A-Za-z_][A-Za-z0-9_]{0,127}
+fn is_valid_ident(name: &str) -> bool {
+    if name.is_empty() || name.len() > 128 {
+        return false;
+    }
+    let mut chars = name.chars();
+    match chars.next() {
+        Some(c) if c.is_ascii_alphabetic() || c == '_' => {}
+        _ => return false,
+    }
+    for c in chars {
+        if !(c.is_ascii_alphanumeric() || c == '_') {
+            return false;
+        }
+    }
+    true
 }
