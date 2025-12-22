@@ -3,7 +3,7 @@
 # -------------------------
 
 RUST_TOOLCHAIN_STABLE := stable
-RUST_TOOLCHAIN_CLIPPY := 1.81.0
+RUST_TOOLCHAIN_CLIPPY := 1.85.0
 
 # Default target
 .PHONY: all

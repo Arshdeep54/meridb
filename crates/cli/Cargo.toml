@@ -1,0 +1,15 @@
+[package]
+name = "cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+sql = { path = "../sql" }
+api = {path = "../api" }
+
+libc.workspace=true
+termios.workspace=true

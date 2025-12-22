@@ -1,53 +1,50 @@
 # MeriDB
 
-## 🚀 A Database from Scratch in Rust
+## A Database from Scratch in Rust
 
 MeriDB is a database built from the ground up in Rust as a learning project to understand database internals. It features a custom-built lexer, parser, storage engine, and a terminal-style query interface. The goal is to explore how databases work under the hood by implementing core functionalities from scratch.
 
 ---
 
-## 🔥 Key Features (Implemented)
+## Key Features (Implemented)
 
-✅ **Custom Lexer & Parser** - Converts raw input into structured queries with case-insensitive parsing.\
-✅ **Terminal-Like Input Handling** - Supports command history with up/down arrow keys, cursor movements, and real-time editing.\
-✅ **Storage Engine** - Implements pages and records for efficient data storage.\
-✅ **Query Execution Engine (WIP)** - Currently being developed to process and execute queries.\
-✅ **Modular Codebase** - Well-structured with separate modules for parsing, execution, input handling, and storage.
-
----
-
-## 🎯 Future Enhancements
-
-🔹 **B-Tree Indexing** - Implementing indexing for faster data retrieval.\
-🔹 **Server Mode** - Enabling remote connections for client-server architecture.\
-🔹 **Dockerization** - Making MeriDB easier to deploy with Docker support.\
-🔹 **Extended SQL Support** - Expanding query capabilities over time.
+- Custom lexer and parser generating a strongly typed AST (SNAFU-based errors)
+- Terminal-like input handling with history and line editing
+- File-backed catalog with binary, versioned metadata (CRC32-checked)
+- Table schemas persisted as binary `schema.tbl` per table
+- Early page/record layout with fixed-size heap pages (8 KiB) and slot directory
+- Modular multi-crate workspace for clean layering
 
 ---
 
-## 📂 Project Structure
+## Planned Enhancements
 
-```
-meridb/
-├── Cargo.toml      # Rust dependencies and metadata
-├── src/
-│   ├── bin/meridb.rs        # Main entry point
-│   ├── database/            # Session management
-│   ├── executor/            # Query execution logic
-│   ├── input_handler/       # Terminal-like user input handling
-│   ├── parser/              # Lexer, parser, AST representation
-│   ├── storage/             # Pages, records, and tables
-│   └── types/               # Custom data types
-└── tests/                   # Unit tests for different modules
-```
+- B-Tree indexing
+- Server mode and network protocol
+- WAL/transactions and recovery
+- Broader SQL support and planner improvements
 
 ---
 
-## 🛠️ Installation & Usage
+## Workspace Structure
+
+This is a multi-crate cargo workspace under `crates/`:
+
+- `crates/types` — Core token and datatype definitions shared across crates
+- `crates/sql` — Lexer, tokens, AST, parser, and structured parser errors (SNAFU)
+- `crates/exec` — Executor translating AST into catalog/storage operations
+- `crates/catalog` — Catalog trait and file-backed implementation with binary metadata (`metadata.mdb`) and table schemas (`schema.tbl`)
+- `crates/storage` — In-memory tables, records, and fixed-size page format (8 KiB) with slot directory; helpers to serialize records/pages
+- `crates/api` — Session façade wiring a `Catalog` and `Executor` for clients
+- `crates/cli` — Terminal client with history; uses the API session
+
+---
+
+## Installation & Usage
 
 ### Prerequisites
 
-- Rust (latest stable version)
+- Rust toolchain
 
 ### Build & Run
 
@@ -57,18 +54,42 @@ git clone https://github.com/arshdeep54/meridb.git
 cd meridb
 
 # Build the project
-cargo build --release
+cargo build
 
 # Run MeriDB
 cargo run
 ```
 
+### Basic CLI Workflow
 
-## 👨‍💻 Why I Built This?
+```sql
+-- Create a database (creates data/<db>/ with binary metadata.mdb)
+create database mydb;
+
+-- Switch to a database (validates metadata)
+use mydb;
+
+-- Create a table (creates data/<db>/tables/<table>/schema.tbl)
+create table users(id integer, name text);
+
+-- List databases and tables
+show databases;
+show tables;
+
+-- Insert (persists in-memory pages; first segment file under data/<db>/tables/<table>/data/)
+insert into users values (1, 'Alice');
+```
+
+Notes:
+- Database metadata and table schemas are binary, versioned, and checksummed (CRC32).
+- Table data uses fixed-size heap pages (8 KiB) with a slot directory; persistence is evolving.
+- Parser and executor return typed errors; CLI prints user-friendly messages.
+
+---
+
+## Why I Built This?
 
 I wanted to dive deep into database internals and understand how databases parse, store, and execute queries from scratch. This project is a learning exercise in Rust’s memory safety, performance optimizations, and system-level programming capabilities.
-
-If you're interested in databases, compilers, or low-level optimizations, feel free to check it out! 🚀
 
 ---
 
