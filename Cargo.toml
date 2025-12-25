@@ -25,11 +25,20 @@ rust.unknown_lints = "deny"
 rust.unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tokio_unstable)'] }
 
 [workspace.dependencies]
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1"
 chrono = "0.4"
 clap = { version = "4.4", features = ["derive"] }
-snafu = "0.8.9"
 crc32fast = "1.5.0"
 libc = "0.2.178"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
+snafu = "0.8.9"
 termios = "0.3.3"
+
+## workspaces members
+api = { path = "crates/api" }
+catalog = { path = "crates/catalog" }
+cli = { path = "crates/cli" }
+exec = { path = "crates/exec" }
+sql = { path = "crates/sql" }
+storage = { path = "crates/storage" }
+types = { path = "crates/types" }

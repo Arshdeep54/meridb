@@ -8,9 +8,8 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-types = { path = "../types" }
-storage = { path = "../storage" }
-
-serde.workspace=true
-snafu.workspace=true
-crc32fast.workspace=true
+crc32fast.workspace = true
+serde.workspace = true
+snafu.workspace = true
+storage.workspace = true
+types.workspace = true

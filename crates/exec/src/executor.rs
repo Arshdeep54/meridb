@@ -83,7 +83,7 @@ impl QueryExecutor {
             let pages = cat.seq_scan_pages(&table_name).map_err(|e| e.to_string())?;
 
             for page in pages {
-                let slots = iter_slots(&page).map_err(|e| e.to_string())?;
+                let slots = iter_slots(&page).map_err(|e| e.clone())?;
                 for (off, len, flags) in slots {
                     if flags != 0 {
                         continue;
@@ -99,10 +99,10 @@ impl QueryExecutor {
                     let rec = deserialize_record_for_page(payload, &table.columns)?;
 
                     // WHERE filtering
-                    if let Some(cond) = &where_clause {
-                        if !rec.evaluate_condition(cond) {
-                            continue;
-                        }
+                    if let Some(cond) = &where_clause
+                        && !rec.evaluate_condition(cond)
+                    {
+                        continue;
                     }
 
                     // Projection
@@ -129,10 +129,10 @@ impl QueryExecutor {
         let mut rs = ResultSet::new(columns.clone());
 
         for rec in table.scan() {
-            if let Some(cond) = &where_clause {
-                if !rec.evaluate_condition(cond) {
-                    continue;
-                }
+            if let Some(cond) = &where_clause
+                && !rec.evaluate_condition(cond)
+            {
+                continue;
             }
 
             let mut out = Record::new(0);

@@ -8,12 +8,11 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-sql = { path = "../sql" }
-api = {path = "../api" }
-
-libc.workspace=true
-termios.workspace=true
+api.workspace = true
 clap.workspace = true
+libc.workspace = true
+sql.workspace = true
+termios.workspace = true
 
 [[bin]]
 name = "meridb"

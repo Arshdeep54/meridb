@@ -8,10 +8,9 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-catalog = { path = "../catalog" }
-exec = { path = "../exec" }
-sql = { path = "../sql" }
-
+catalog.workspace = true
+crc32fast.workspace = true
+exec.workspace = true
 serde.workspace = true
 snafu.workspace = true
-crc32fast.workspace = true
+sql.workspace = true

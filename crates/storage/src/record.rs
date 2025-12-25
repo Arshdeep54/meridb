@@ -181,7 +181,7 @@ pub fn serialize_record_for_page(record: &Record, columns: &[Column]) -> Result<
 
 pub fn deserialize_record_for_page(payload: &[u8], columns: &[Column]) -> Result<Record, String> {
     let n = columns.len();
-    let bitmap_bytes = (n + 7) / 8;
+    let bitmap_bytes = n.div_ceil(8);
     if payload.len() < bitmap_bytes {
         return Err("payload too short for null bitmap".into());
     }

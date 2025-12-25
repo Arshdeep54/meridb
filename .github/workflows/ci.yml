@@ -66,6 +66,27 @@ jobs:
 
       - name: Run udeps
         run: make check-udeps
+  taplo:
+    name: Taplo (TOML formatting)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up Rust (stable for cargo install)
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Cache Cargo Dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install taplo
+        run: cargo +stable install taplo-cli --version ^0.9 --locked --force
+
+      - name: Check TOML formatting with taplo
+        run: taplo format --check
 
   test:
     name: Run Tests

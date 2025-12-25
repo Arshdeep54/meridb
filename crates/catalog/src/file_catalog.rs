@@ -233,7 +233,7 @@ impl Catalog for FileCatalog {
                         let slots =
                             iter_slots(&page).map_err(|e| CatalogError::InvalidMetadata {
                                 path: path.clone(),
-                                source: Box::new(std::io::Error::new(std::io::ErrorKind::Other, e)),
+                                source: Box::new(std::io::Error::other(e)),
                             })?;
                         for (off, len, flags) in slots {
                             if flags != 0 {
@@ -248,10 +248,7 @@ impl Catalog for FileCatalog {
                             let rec = deserialize_record_for_page(payload, &tbl.columns).map_err(
                                 |e| CatalogError::InvalidMetadata {
                                     path: path.clone(),
-                                    source: Box::new(std::io::Error::new(
-                                        std::io::ErrorKind::Other,
-                                        e,
-                                    )),
+                                    source: Box::new(std::io::Error::other(e)),
                                 },
                             )?;
                             let _ = tbl.insert_record(rec);
@@ -296,12 +293,11 @@ impl Catalog for FileCatalog {
                 }
             };
             let path = entry.path();
-            if path.is_dir() {
-                if let Some(name_os) = path.file_name() {
-                    if let Some(name) = name_os.to_str() {
-                        out.push(name.to_string());
-                    }
-                }
+            if path.is_dir()
+                && let Some(name_os) = path.file_name()
+                && let Some(name) = name_os.to_str()
+            {
+                out.push(name.to_string());
             }
         }
 

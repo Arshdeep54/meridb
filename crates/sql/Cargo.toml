@@ -8,7 +8,6 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-types = { path = "../types" }
-
-serde.workspace=true
-snafu.workspace=true
+serde.workspace = true
+snafu.workspace = true
+types.workspace = true

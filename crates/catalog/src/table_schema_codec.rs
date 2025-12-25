@@ -165,7 +165,7 @@ pub fn decode_schema(bytes: &[u8]) -> Result<(String, Vec<Column>), crate::error
         let code = u16::from_le_bytes(code_b.try_into().unwrap());
         let dt = data_type_from_code(code).map_err(|e| CatalogError::WriteFile {
             path: std::path::PathBuf::from("schema.tbl"),
-            source: std::io::Error::new(std::io::ErrorKind::Other, e),
+            source: std::io::Error::other(e),
         })?;
         let nullable = nullable_b[0] != 0;
 
