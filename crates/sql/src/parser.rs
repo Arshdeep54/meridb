@@ -289,12 +289,17 @@ impl Parser {
         self.expect(Token::Command(Command::SELECT))?;
 
         let mut columns = Vec::new();
-        while let Some(Token::IDENT(col)) = self.consume() {
-            columns.push(col.iter().collect::<String>());
-            if let Some(Token::COMMA(',')) = self.peek() {
-                self.consume();
-            } else {
-                break;
+        if let Some(Token::Operator(Operator::ASTERISK)) = self.peek() {
+            self.consume();
+            columns = vec!["*".to_string()];
+        } else {
+            while let Some(Token::IDENT(col)) = self.consume() {
+                columns.push(col.iter().collect::<String>());
+                if let Some(Token::COMMA(',')) = self.peek() {
+                    self.consume();
+                } else {
+                    break;
+                }
             }
         }
 

@@ -77,6 +77,16 @@ impl QueryExecutor {
             None => return Err(format!("Table '{}' not found", table_name)),
         };
 
+        let columns = if columns.len() == 1 && columns[0] == "*" {
+            table
+                .columns
+                .iter()
+                .map(|c| c.name.clone())
+                .collect::<Vec<_>>()
+        } else {
+            columns
+        };
+
         if table.scan().next().is_none() {
             let mut rs = ResultSet::new(columns.clone());
 
