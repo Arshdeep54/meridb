@@ -35,13 +35,13 @@ fn main() {
     if let Some(sql) = args.exec {
         let mut session = Session::file_backed(args.data_dir);
 
-        if let Some(db) = args.database
-            && let Err(e) = session.execute(ASTNode::USE {
+        if let Some(db) = args.database {
+            if let Err(e) = session.execute(ASTNode::USE {
                 database_name: db.clone(),
-            })
-        {
-            eprintln!("Exec error: {e}");
-            std::process::exit(1);
+            }) {
+                eprintln!("Exec error: {e}");
+                std::process::exit(1);
+            }
         }
 
         match parse_command(&sql) {
@@ -69,10 +69,10 @@ fn main() {
     let mut session = Session::file_backed(args.data_dir);
 
     //preselect database for the REPL if -d/--database is provided
-    if let Some(db) = args.database
-        && let Err(e) = session.execute(ASTNode::USE { database_name: db })
-    {
-        eprintln!("Exec error: {e}");
+    if let Some(db) = args.database {
+        if let Err(e) = session.execute(ASTNode::USE { database_name: db }) {
+            eprintln!("Exec error: {e}");
+        }
     }
 
     while let Ok(line) = input_handler.readline("meridb> ") {

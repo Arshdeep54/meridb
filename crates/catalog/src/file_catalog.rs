@@ -293,11 +293,12 @@ impl Catalog for FileCatalog {
                 }
             };
             let path = entry.path();
-            if path.is_dir()
-                && let Some(name_os) = path.file_name()
-                && let Some(name) = name_os.to_str()
-            {
-                out.push(name.to_string());
+            if path.is_dir() {
+                if let Some(name_os) = path.file_name() {
+                    if let Some(name) = name_os.to_str() {
+                        out.push(name.to_string());
+                    }
+                }
             }
         }
 

@@ -34,11 +34,12 @@ impl Table {
         self.next_record_id += 1;
 
         for page_id in 0..self.next_page_id {
-            if let Some(page) = self.pages.get_mut(&page_id)
-                && !page.is_full(std::mem::size_of::<Record>())
-                && page.insert_record(record.clone()).is_ok()
-            {
-                return Ok(record.id);
+            if let Some(page) = self.pages.get_mut(&page_id) {
+                if !page.is_full(std::mem::size_of::<Record>())
+                    && page.insert_record(record.clone()).is_ok()
+                {
+                    return Ok(record.id);
+                }
             }
         }
 

@@ -31,6 +31,17 @@ check-udeps: ## Check for unused dependencies
 	cargo +nightly udeps --workspace --all-targets
 
 # -------------------------
+# Taplo formatting
+# -------------------------
+.PHONY: check-taplo
+taplo: ## Check for unused dependencies
+	taplo check
+
+.PHONY: taplo-format
+taplo-format: ## Format code with taplo
+	taplo format
+
+# -------------------------
 # Build project
 # -------------------------
 .PHONY: build

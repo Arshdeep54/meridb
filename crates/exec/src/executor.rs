@@ -109,10 +109,10 @@ impl QueryExecutor {
                     let rec = deserialize_record_for_page(payload, &table.columns)?;
 
                     // WHERE filtering
-                    if let Some(cond) = &where_clause
-                        && !rec.evaluate_condition(cond)
-                    {
-                        continue;
+                    if let Some(cond) = &where_clause {
+                        if !rec.evaluate_condition(cond) {
+                            continue;
+                        }
                     }
 
                     // Projection
@@ -139,10 +139,10 @@ impl QueryExecutor {
         let mut rs = ResultSet::new(columns.clone());
 
         for rec in table.scan() {
-            if let Some(cond) = &where_clause
-                && !rec.evaluate_condition(cond)
-            {
-                continue;
+            if let Some(cond) = &where_clause {
+                if !rec.evaluate_condition(cond) {
+                    continue;
+                }
             }
 
             let mut out = Record::new(0);
