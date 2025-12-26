@@ -5,10 +5,12 @@ use api::Session;
 use clap::Parser;
 use sql::ast::ASTNode;
 use sql::parse_command;
+use tracing::{debug, info};
 
 use crate::input_handler::InputHandler;
 
 pub mod input_handler;
+mod logging;
 
 #[derive(Debug, Parser)]
 #[command(name = "meridb", version, about = "MeriDB CLI")]
@@ -29,6 +31,8 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
+    let _guard = logging::init_logging(&args.data_dir, args.database.as_deref());
+
     fs::create_dir_all(&args.data_dir).ok();
 
     // Non-interactive: --exec
@@ -36,6 +40,7 @@ fn main() {
         let mut session = Session::file_backed(args.data_dir);
 
         if let Some(db) = args.database {
+            info!("Using database: {}", db);
             if let Err(e) = session.execute(ASTNode::USE {
                 database_name: db.clone(),
             }) {
@@ -70,6 +75,7 @@ fn main() {
 
     //preselect database for the REPL if -d/--database is provided
     if let Some(db) = args.database {
+        info!("Using database: {}", db);
         if let Err(e) = session.execute(ASTNode::USE { database_name: db }) {
             eprintln!("Exec error: {e}");
         }
@@ -80,10 +86,13 @@ fn main() {
             break;
         }
         match parse_command(&line) {
-            Ok(ast) => match session.execute(ast) {
-                Ok(qr) => println!("{}", qr),
-                Err(e) => eprintln!("Exec error: {e}"),
-            },
+            Ok(ast) => {
+                debug!("Parsed AST: {:#?}", ast);
+                match session.execute(ast) {
+                    Ok(qr) => println!("{}", qr),
+                    Err(e) => eprintln!("Exec error: {e}"),
+                }
+            }
             Err(e) => eprintln!("Parse error: {}", e),
         }
     }

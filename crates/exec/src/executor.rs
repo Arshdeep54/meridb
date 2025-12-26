@@ -7,6 +7,7 @@ use storage::{
     record::deserialize_record_for_page,
     types::{Column, TupleLoc},
 };
+use tracing::info;
 
 use super::result::{ExecutionResult, QueryResult};
 use crate::{Executor, result::ResultSet};
@@ -202,6 +203,7 @@ impl QueryExecutor {
         table_name: String,
         values: Vec<ASTValue>,
     ) -> ExecutionResult {
+        info!(table = %table_name, "insert.start");
         let table = match cat.get_table_mut(&table_name) {
             Some(t) => t,
             None => return Err(format!("Table '{}' not found", table_name)),

@@ -7,13 +7,17 @@ pub mod token;
 use error::{Result, SqlError};
 
 use parser::Parser;
+use tracing::debug;
 use types::tokens::{Command, Token};
 
 use crate::ast::ASTNode;
 
 pub fn parse_command(command: &str) -> Result<ASTNode> {
     let trimmed_command = command.trim();
+
     let tokens = lexer::get_tokens(trimmed_command);
+    debug!("Tokens: {tokens:?}");
+
     let mut parser = Parser::new(tokens);
 
     match parser.peek() {

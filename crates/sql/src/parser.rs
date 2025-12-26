@@ -127,6 +127,7 @@ impl Parser {
             columns,
         })
     }
+
     pub fn parse_create_database(&mut self) -> Result<ASTNode> {
         self.expect(Token::Command(Command::CREATE))?;
 
@@ -150,6 +151,7 @@ impl Parser {
     pub fn parse_condition(&mut self) -> Result<Condition> {
         self.parse_expression()
     }
+
     fn parse_expression(&mut self) -> Result<Condition> {
         let mut left = self.parse_term()?;
         while let Some(Token::Operator(op)) = self.peek() {
@@ -173,6 +175,7 @@ impl Parser {
                 break;
             }
         }
+
         Ok(left)
     }
 
