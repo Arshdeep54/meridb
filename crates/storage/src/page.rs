@@ -139,7 +139,7 @@ impl Page {
         for rid in ids {
             let rec = self.records.get(&rid).expect("record disappeared");
 
-            let payload = serialize_record_for_page(rec, columns)
+            let payload = serialize_record_for_page(rid, rec, columns)
                 .map_err(|e| format!("serialize record {} failed: {}", rid, e))?;
             let plen = payload.len();
 
@@ -187,18 +187,20 @@ struct ReadHeader {
 pub fn iter_slots(buf: &[u8]) -> Result<impl Iterator<Item = (u16, u16, u8)> + '_, String> {
     let hdr = read_header(buf)?;
     let rc = hdr.record_count as usize;
-    let slot_dir_start = PAGE_SIZE
-        .checked_sub(rc * SLOT_LEN)
-        .ok_or("slot calc overflow")?;
+
     if buf.len() < PAGE_SIZE {
         return Err("page buffer too small".into());
     }
+    let slot_dir_start = PAGE_SIZE
+        .checked_sub(rc * SLOT_LEN)
+        .ok_or("slot calc overflow")?;
     if slot_dir_start < HEADER_LEN {
         return Err("corrupt page (slot_dir overlaps header)".into());
     }
 
+    // Slot i is stored at a stable offset from the end: PAGE_SIZE - (i+1)*SLOT_LEN
     Ok((0..rc).map(move |i| {
-        let off = slot_dir_start + i * SLOT_LEN;
+        let off = PAGE_SIZE - (i + 1) * SLOT_LEN;
         let o = u16::from_le_bytes(buf[off..off + 2].try_into().unwrap());
         let l = u16::from_le_bytes(buf[off + 2..off + 4].try_into().unwrap());
         let flags = buf[off + 4];
@@ -217,6 +219,91 @@ fn read_header(buf: &[u8]) -> Result<ReadHeader, String> {
     Ok(ReadHeader { record_count: rc })
 }
 
+// Append a new payload; returns new slot_id
+pub fn page_append(buf: &mut [u8], payload: &[u8]) -> Result<u16, String> {
+    if buf.len() != PAGE_SIZE {
+        return Err("invalid page buffer size".into());
+    }
+    let hdr = read_header(buf)?;
+    let rc = hdr.record_count as usize;
+
+    // Compute slot_dir start and free space
+    let slot_dir_start = PAGE_SIZE
+        .checked_sub(rc * SLOT_LEN)
+        .ok_or_else(|| "slot calc overflow".to_string())?;
+    // Free space ends where slot dir starts; payload area ends at slot_dir_start
+    // Find end of used payload region by scanning slots for max end
+    let mut max_end = HEADER_LEN;
+    for (o, l, _fl) in iter_slots(buf)? {
+        let end = o as usize + l as usize;
+        if end > max_end {
+            max_end = end;
+        }
+    }
+    let payload_free_end = slot_dir_start;
+    let needed = payload.len();
+    if max_end + needed + SLOT_LEN > payload_free_end {
+        return Err("page has not enough free space".into());
+    }
+
+    // Copy payload
+    buf[max_end..max_end + needed].copy_from_slice(payload);
+
+    // Write new slot at end of slot dir (new index = rc)
+    let new_slot_off = slot_dir_start - SLOT_LEN;
+    let o_le = (max_end as u16).to_le_bytes();
+    let l_le = (needed as u16).to_le_bytes();
+    buf[new_slot_off..new_slot_off + 2].copy_from_slice(&o_le);
+    buf[new_slot_off + 2..new_slot_off + 4].copy_from_slice(&l_le);
+    buf[new_slot_off + 4] = 0; // flags
+
+    // Update header: record_count += 1
+    let new_rc = (rc as u16) + 1;
+    buf[12..14].copy_from_slice(&new_rc.to_le_bytes());
+
+    Ok(rc as u16) // new slot id is old count
+}
+
+// Try to overwrite payload in place if it fits the old slot length
+// Returns Ok(true) if overwritten; Ok(false) if not (caller must append+old-tombstone)
+pub fn page_overwrite_if_fits(
+    buf: &mut [u8],
+    slot_id: u16,
+    new_payload: &[u8],
+) -> Result<bool, String> {
+    let rc = u16::from_le_bytes(buf[12..14].try_into().unwrap()) as usize;
+    if slot_id as usize >= rc {
+        return Err("invalid slot id".into());
+    }
+
+    let off = PAGE_SIZE - (slot_id as usize + 1) * SLOT_LEN;
+    let o = u16::from_le_bytes(buf[off..off + 2].try_into().unwrap()) as usize;
+    let l = u16::from_le_bytes(buf[off + 2..off + 4].try_into().unwrap()) as usize;
+    let _flags = buf[off + 4];
+
+    if new_payload.len() > l {
+        return Ok(false);
+    }
+    // Overwrite in place (pad leftover with zeros if shorter)
+    buf[o..o + new_payload.len()].copy_from_slice(new_payload);
+    if new_payload.len() < l {
+        for b in &mut buf[o + new_payload.len()..o + l] {
+            *b = 0;
+        }
+    }
+    Ok(true)
+}
+
+pub fn page_set_tombstone(buf: &mut [u8], slot_id: u16) -> Result<(), String> {
+    let rc = u16::from_le_bytes(buf[12..14].try_into().unwrap()) as usize;
+    if slot_id as usize >= rc {
+        return Err("invalid slot id".into());
+    }
+
+    let off = PAGE_SIZE - (slot_id as usize + 1) * SLOT_LEN;
+    buf[off + 4] = 1; // set tombstone flag
+    Ok(())
+}
 #[cfg(test)]
 mod tests {
     use super::*;

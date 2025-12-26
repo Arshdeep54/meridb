@@ -59,13 +59,13 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
-      
 
       - name: Install cargo-udeps
         run: cargo install cargo-udeps --locked
 
       - name: Run udeps
         run: make check-udeps
+        
   taplo:
     name: Taplo (TOML formatting)
     runs-on: ubuntu-latest

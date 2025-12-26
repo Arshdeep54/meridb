@@ -34,6 +34,7 @@ impl Session<FileCatalog, QueryExecutor> {
                 root_dir: data_dir,
                 current_db: None,
                 tables: HashMap::new(),
+                table_states: HashMap::new(),
             },
             QueryExecutor,
         )

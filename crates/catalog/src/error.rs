@@ -35,6 +35,12 @@ pub enum CatalogError {
         source: std::io::Error,
     },
 
+    #[snafu(display("Failed to seek file {path:?}: {source}"))]
+    SeekFile {
+        path: PathBuf,
+        source: std::io::Error,
+    },
+
     #[snafu(display("Failed to rename {from:?} to {to:?}: {source}"))]
     Rename {
         from: PathBuf,

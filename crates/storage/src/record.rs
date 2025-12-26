@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 use sql::ast::{ASTValue, Condition};
 use std::collections::HashMap;
+use std::mem::size_of;
 use types::tokens::{DataType, Operator};
+
+use crate::types::RowId;
 
 use super::types::Column;
 
@@ -126,10 +129,17 @@ impl Record {
 }
 
 // Serialize a Record to a compact row payload suitable for heap page storage.
-pub fn serialize_record_for_page(record: &Record, columns: &[Column]) -> Result<Vec<u8>, String> {
+pub fn serialize_record_for_page(
+    row_id: RowId,
+    record: &Record,
+    columns: &[Column],
+) -> Result<Vec<u8>, String> {
     let n = columns.len();
     let bitmap_bytes = n.div_ceil(8);
-    let mut out = Vec::with_capacity(16 * n + bitmap_bytes);
+    let mut out = Vec::with_capacity(16 * n + bitmap_bytes + size_of::<RowId>());
+
+    // Row ID
+    out.extend_from_slice(&row_id.to_le_bytes());
 
     // Null bitmap (bit i = 1 means NULL)
     let mut bitmap = vec![0u8; bitmap_bytes];
@@ -179,16 +189,22 @@ pub fn serialize_record_for_page(record: &Record, columns: &[Column]) -> Result<
     Ok(out)
 }
 
-pub fn deserialize_record_for_page(payload: &[u8], columns: &[Column]) -> Result<Record, String> {
+pub fn deserialize_record_for_page(
+    payload: &[u8],
+    columns: &[Column],
+) -> Result<(RowId, Record), String> {
     let n = columns.len();
     let bitmap_bytes = n.div_ceil(8);
-    if payload.len() < bitmap_bytes {
+    if payload.len() < bitmap_bytes + size_of::<RowId>() {
         return Err("payload too short for null bitmap".into());
     }
 
+    let (row_id, payload) = payload.split_at(size_of::<RowId>());
+    let row_id = u64::from_le_bytes(row_id.try_into().unwrap());
+
     let (bitmap, mut p) = payload.split_at(bitmap_bytes);
 
-    let mut rec = Record::new(0);
+    let mut rec = Record::new(row_id);
     for (i, col) in columns.iter().enumerate() {
         let byte = i / 8;
         let bit = i % 8;
@@ -244,7 +260,7 @@ pub fn deserialize_record_for_page(payload: &[u8], columns: &[Column]) -> Result
             }
         }
     }
-    Ok(rec)
+    Ok((row_id, rec))
 }
 
 #[cfg(test)]

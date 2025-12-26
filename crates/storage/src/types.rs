@@ -18,6 +18,17 @@ impl Column {
     }
 }
 
+pub type RowId = u64;
+
+// Physical tuple location in the heap
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TupleLoc {
+    pub seg: u32,
+    pub page_id: u32,
+    pub slot_id: u16,
+    pub flags: u8,
+}
+
 #[cfg(test)]
 mod tests {
     use types::tokens::DataType;
