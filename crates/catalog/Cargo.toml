@@ -13,3 +13,6 @@ serde.workspace = true
 snafu.workspace = true
 storage.workspace = true
 types.workspace = true
+
+[dev-dependencies]
+cargo-husky.workspace = true

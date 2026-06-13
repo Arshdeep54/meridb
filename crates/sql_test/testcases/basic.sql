@@ -1,0 +1,14 @@
+CREATE DATABASE sales;
+USE sales;
+CREATE TABLE items (id INTEGER, name TEXT, price INTEGER);
+INSERT INTO items VALUES (1, 'Notebook', 5);
+INSERT INTO items VALUES (2, 'Phone', 500);
+SELECT * FROM items;
+SELECT id, name FROM items;
+SELECT * FROM items WHERE id = 1;
+SELECT * FROM items WHERE price = 500;
+UPDATE items SET price = 6 WHERE id = 1;
+SELECT * FROM items WHERE id = 1;
+DELETE FROM items WHERE id = 2;
+SELECT * FROM items;
+SELECT * FROM non_existent_table;

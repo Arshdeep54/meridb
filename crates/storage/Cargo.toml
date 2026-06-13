@@ -11,3 +11,6 @@ workspace = true
 serde.workspace = true
 sql.workspace = true
 types.workspace = true
+
+[dev-dependencies]
+cargo-husky.workspace = true

@@ -5,6 +5,7 @@ members = [
     "crates/cli",
     "crates/exec",
     "crates/sql",
+    "crates/sql_test",
     "crates/storage",
     "crates/types",
 ]
@@ -14,8 +15,10 @@ resolver = "3"
 version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
+rust-version = "1.80" 
 
 [workspace.lints]
+clippy.collapsible_if = "allow"
 clippy.dbg_macro = "warn"
 clippy.implicit_clone = "warn"
 clippy.result_large_err = "allow"
@@ -25,6 +28,7 @@ rust.unknown_lints = "deny"
 rust.unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tokio_unstable)'] }
 
 [workspace.dependencies]
+cargo-husky = { version = "1.5.0", default-features = false, features = ["precommit-hook", "prepush-hook", "run-cargo-clippy", "run-cargo-test"] }
 chrono = "0.4"
 clap = { version = "4.4", features = ["derive"] }
 crc32fast = "1.5.0"

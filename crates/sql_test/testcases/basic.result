@@ -1,0 +1,102 @@
+-- query:
+CREATE DATABASE sales;
+-- result:
+Created successfully
+
+-- query:
+USE sales;
+-- result:
+Using sales
+
+-- query:
+CREATE TABLE items (id INTEGER, name TEXT, price INTEGER);
+-- result:
+Created successfully
+
+-- query:
+INSERT INTO items VALUES (1, 'Notebook', 5);
+-- result:
+1 row(s) inserted
+
+-- query:
+INSERT INTO items VALUES (2, 'Phone', 500);
+-- result:
+1 row(s) inserted
+
+-- query:
+SELECT * FROM items;
+-- result:
++----+----------+-------+
+| id | name     | price |
++----+----------+-------+
+| 1  | Notebook | 5     |
+| 2  | Phone    | 500   |
++----+----------+-------+
+2 row(s)
+
+-- query:
+SELECT id, name FROM items;
+-- result:
++----+----------+
+| id | name     |
++----+----------+
+| 1  | Notebook |
+| 2  | Phone    |
++----+----------+
+2 row(s)
+
+-- query:
+SELECT * FROM items WHERE id = 1;
+-- result:
++----+----------+-------+
+| id | name     | price |
++----+----------+-------+
+| 1  | Notebook | 5     |
++----+----------+-------+
+1 row(s)
+
+-- query:
+SELECT * FROM items WHERE price = 500;
+-- result:
++----+-------+-------+
+| id | name  | price |
++----+-------+-------+
+| 2  | Phone | 500   |
++----+-------+-------+
+1 row(s)
+
+-- query:
+UPDATE items SET price = 6 WHERE id = 1;
+-- result:
+1 row(s) updated
+
+-- query:
+SELECT * FROM items WHERE id = 1;
+-- result:
++----+----------+-------+
+| id | name     | price |
++----+----------+-------+
+| 1  | Notebook | 6     |
++----+----------+-------+
+1 row(s)
+
+-- query:
+DELETE FROM items WHERE id = 2;
+-- result:
+1 row(s) deleted
+
+-- query:
+SELECT * FROM items;
+-- result:
++----+----------+-------+
+| id | name     | price |
++----+----------+-------+
+| 1  | Notebook | 6     |
++----+----------+-------+
+1 row(s)
+
+-- query:
+SELECT * FROM non_existent_table;
+-- error:
+Table 'non_existent_table' not found
+

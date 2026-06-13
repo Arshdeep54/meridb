@@ -153,7 +153,9 @@ impl QueryExecutor {
                 }
             }
 
-            for (_, (_, _, rec)) in latest.into_iter() {
+            let mut entries: Vec<(u64, (u32, u16, Record))> = latest.into_iter().collect();
+            entries.sort_by_key(|(k, _)| *k);
+            for (_, (_, _, rec)) in entries {
                 let mut out = Record::new(0);
                 for c in &columns {
                     match rec.get_value(c) {
@@ -279,7 +281,7 @@ impl QueryExecutor {
         let mut latest: HashMap<u64, (u32, u16, storage::Record)> = HashMap::new();
 
         for (pid, page) in pages.iter().enumerate() {
-            let slots = iter_slots(page).map_err(|e| e.to_string())?;
+            let slots = iter_slots(page).map_err(|e| e.clone())?;
             for (sid, (off, len, flags)) in slots.enumerate() {
                 if flags != 0 {
                     continue;
@@ -371,7 +373,7 @@ impl QueryExecutor {
         let mut latest: HashMap<u64, (u32, u16)> = HashMap::new();
 
         for (pid, page) in pages.iter().enumerate() {
-            let slots = iter_slots(page).map_err(|e| e.to_string())?;
+            let slots = iter_slots(page).map_err(|e| e.clone())?;
             for (sid, (off, len, flags)) in slots.enumerate() {
                 if flags != 0 {
                     continue;

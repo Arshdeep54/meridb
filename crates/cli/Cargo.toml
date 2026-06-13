@@ -20,3 +20,6 @@ tracing-subscriber.workspace = true
 [[bin]]
 name = "meridb"
 path = "src/main.rs"
+
+[dev-dependencies]
+cargo-husky.workspace = true

@@ -13,3 +13,6 @@ sql.workspace = true
 storage.workspace = true
 tracing.workspace = true
 types.workspace = true
+
+[dev-dependencies]
+cargo-husky.workspace = true
